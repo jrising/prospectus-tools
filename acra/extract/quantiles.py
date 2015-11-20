@@ -107,7 +107,7 @@ for impact in allimpacts:
 
     # Combine across all batch-realizations that have all models
     for rcp in rcps:
-        weights = weights.get_weights(rcp)
+        model_weights = weights.get_weights(rcp)
 
         if do_yearsets:
             dists = [rcp + '-' + str(years[0]) for years in yearses]
@@ -128,8 +128,8 @@ for impact in allimpacts:
                     allweights = []
 
                     for collection in data[dist][region]:
-                        if len(data[dist][region][collection]) >= (allow_partial if allow_partial > 0 else len(weights)):
-                            (values, valueweights) = weights.weighted_values(data[dist][region][collection], weights)
+                        if len(data[dist][region][collection]) >= (allow_partial if allow_partial > 0 else len(model_weights)):
+                            (values, valueweights) = weights.weighted_values(data[dist][region][collection], model_weights)
                             if isinstance(values[0], list):
                                 for ii in range(len(values)):
                                     allvalues += values[ii]
