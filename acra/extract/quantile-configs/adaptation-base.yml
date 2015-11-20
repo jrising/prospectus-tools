@@ -1,0 +1,38 @@
+# Directory containing the impacts results tree
+results-root: /shares/gcp/outputs/impacts/impacts-adapt
+# Directory to write output quantile files
+output-dir: bynational-adapt
+
+# Aggregation level; one of county, state, region, or national
+level: national
+
+# Calculate values over the Monte Carlo results?
+do-montecarlo: yes
+# Calculate adaptation results: One of no, yes, and comparison
+do-adaptation: yes
+
+# Collect results into sets of years?
+do-yearsets: no
+# Report the mean of these sets of years?
+do-yearsetmeans: no
+
+# Perform operations for only one RCP or realization?
+only-rcp: null # e.g., rcp85
+only-realization: null # e.g., 001
+# Which impacts should be included?  List or all
+only-impacts: [health-mortality, yields-maize, yields-maize-noco2]
+
+# Which column to read from the files (starting from 2, the final result)
+column: 2
+
+# Include results without a full set of models?
+# Specify the least models to allow, or 0 to require all
+allow-partial: 20
+
+# Files to check within impact directories
+checks: [check-20140609, cgechk-20140609]
+
+
+# Number of batches to include
+# For ACP, county levels 5, state and region had 10, national had 25
+batches: 5
