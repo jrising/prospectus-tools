@@ -17,6 +17,13 @@ The syntax for `single.sh` is:
  - `<scenario>` is an optional scenario from the set `rcp26`, `rcp45`, `rcp60`, `rcp85`, or nothing (`""`).  Default is `rcp85`.
  - `<q-value>` is an optional quantile for the economic damage function, between 0 and 1.  Only used if `<scenario>` is given.  Default is 0.5.
 
+For example, a valid call on Shackleton is currently:
+```
+./single.sh /home/dmr/county_climate/smme/16052014/daily/001/rcp85/miroc5/
+```
+
+The results will be generated into the current directory.
+
 The results are in files named:
 - `<impact>-national.tar.gz`: The nationally aggregated results
 - `<impact>-state.tar.gz`: The state aggregated results
