@@ -9,7 +9,7 @@ level: national
 # Calculate values over the Monte Carlo results?
 do-montecarlo: yes
 # Calculate adaptation results: One of no, yes, and comparison
-do-adaptation: comparison
+do-adaptation: no
 
 # Collect results into sets of years?
 do-yearsets: no
@@ -20,7 +20,7 @@ do-yearsetmeans: no
 only-rcp: null # e.g., rcp85
 only-realization: null # e.g., 001
 # Which impacts should be included?  List or all
-only-impacts: [health-mortality, yields-maize, yields-maize-noco2]
+only-impacts: [health-mortality, yields-maize, yields-maize-noco2, crime-property, crime-violent]
 
 # Which column to read from the files (starting from 2, the final result)
 column: 2

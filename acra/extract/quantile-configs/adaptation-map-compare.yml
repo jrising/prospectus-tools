@@ -1,15 +1,15 @@
 # Directory containing the impacts results tree
 results-root: /shares/gcp/outputs/impacts/impacts
 # Directory to write output quantile files
-output-dir: quantiles
+output-dir: bycounty-noadt
 
 # Aggregation level; one of county, state, region, or national
-level: national
+level: county
 
 # Calculate values over the Monte Carlo results?
 do-montecarlo: yes
 # Calculate adaptation results: One of no, yes, and comparison
-do-adaptation: no
+do-adaptation: comparison
 
 # Collect results into sets of years?
 do-yearsets: yes
@@ -20,21 +20,18 @@ do-yearsetmeans: yes
 only-rcp: null # e.g., rcp85
 only-realization: null # e.g., 001
 # Which impacts should be included?  List or all
-only-impacts: all
-# Which GCM models should we include?  List or all
-only-models: all
+only-impacts: [health-mortality, yields-maize, yields-maize-noco2, crime-property, crime-violent]
 
 # Which column to read from the files (starting from 2, the final result)
 column: 2
 
 # Include results without a full set of models?
 # Specify the least models to allow, or 0 to require all
-allow-partial: 1
+allow-partial: 20
 
 # Files to check within impact directories
 checks: [check-20140609, cgechk-20140609]
 
 # Number of batches to include
 # For ACP, county levels 5, state and region had 10, national had 25
-# May also be 'truehist'
-batches: 25
+batches: 5

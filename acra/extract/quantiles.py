@@ -15,7 +15,6 @@ with open(sys.argv[1], 'r') as fp:
 
     do_montecarlo = config['do-montecarlo']
     do_adaptation = config['do-adaptation'] == True
-    do_adaptation_comparison = config['do-adaptation'] == 'comparison'
     do_yearsets = config['do-yearsets']
     do_yearsetmeans = config['do-yearsetmeans']
     do_rcp_only = config['only-rcp']
