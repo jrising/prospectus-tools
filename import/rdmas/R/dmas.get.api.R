@@ -8,8 +8,8 @@
 
 dmas.get.api <- function(methodargs, as.model, quietly=F) {
     ## Change the server for all commands here
-    server <- "http://127.0.0.1:8080"
-    ## Local: "http://dmas.berkeley.edu"
+    server <- "http://dmas.berkeley.edu"
+    ## Local: "http://127.0.0.1:8080"
 
     dmas.urlstr <- paste0(server, "/api/", methodargs)
 
