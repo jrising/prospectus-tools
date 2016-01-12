@@ -1,4 +1,4 @@
-=== DMAS Upload Tool for R ===
+# DMAS Upload Tool for R
 
 To install,
 
