@@ -13,7 +13,6 @@ dmas.get.api <- function(methodargs, as.model, quietly=F) {
 
     dmas.urlstr <- paste0(server, "/api/", methodargs)
 
-    print(dmas.urlstr)
     if (!quietly) {
         print(dmas.urlstr)
     }
