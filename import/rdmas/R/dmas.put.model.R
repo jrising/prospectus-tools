@@ -16,7 +16,7 @@ dmas.put.model <- function(model, apikey, infoid, varnum=NA) {
     if (is.na(varnum) || varnum > length(B))
         varnum <- length(B)
 
-    dmas.get.api("make_queue", F, quietly=T)
+    dmas.get.api(methodargs = "make_queue", as.model = FALSE, quietly = TRUE)
     progressV <- 100 * 4/7
     progressB <- 100 * 1/7
     progressNames <- 100 * 1/7
@@ -37,10 +37,11 @@ dmas.put.model <- function(model, apikey, infoid, varnum=NA) {
     print("Constructing V matrices...")
 
     Vstr <- ""
-    if (class(model) == "felm")
-        V <- model$robustvcv
-    else
-        V <- vcov(model)
+    if (class(model) == "felm"){
+      V <- model$robustvcv
+    } else {
+      V <- vcov(model)
+    }
     totalV <- varnum * varnum
     for (ii in 1:varnum) {
         for (jj in 1:varnum) {
@@ -70,10 +71,11 @@ dmas.put.model <- function(model, apikey, infoid, varnum=NA) {
 
     print("Constructing coefficient names...")
 
-    if (class(model) == "felm")
-        conames <- paste(rownames(B)[1:varnum], collapse=",")
-    else
-        conames <- paste(names(B)[1:varnum], collapse=",")
+    if (class(model) == "felm"){
+      conames <- paste(rownames(B)[1:varnum], collapse=",")
+    } else {
+      conames <- paste(names(B)[1:varnum], collapse=",")
+    }
     conames <- gsub("#", "%23", conames)
 
     while (nchar(conames) > 800) {
@@ -97,7 +99,7 @@ dmas.put.model <- function(model, apikey, infoid, varnum=NA) {
             Bstr <- ""
         }
         if (nchar(conames) > 250) {
-            dmas.get.api(paste0(paste0("queue_arguments?names=", names)), F, quietly=T)
+            dmas.get.api(paste0(paste0("queue_arguments?names=", conames)), F, quietly=T)
             conames <- ""
         }
     }
