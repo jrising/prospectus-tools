@@ -13,6 +13,7 @@ weight <- c(ctl, trt)
 lm.D9 <- lm(weight ~ group)
 
 dmas.put.model(lm.D9, "4sW2Txtsn8o3bkwY", "LEAVE-BLANK")
+dmas.extract.single("4sW2Txtsn8o3bkwY", "groupTrt", "LEAVE-BLANK")
 
 library(lfe)
 
@@ -36,3 +37,4 @@ y <- x + 0.5*x2 + id.eff[id] + firm.eff[firm] + u
 est <- felm(y ~ x+x2| id + firm)
 
 dmas.put.model(est, "4sW2Txtsn8o3bkwY", "LEAVE-BLANK")
+

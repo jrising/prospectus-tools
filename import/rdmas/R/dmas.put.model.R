@@ -22,7 +22,7 @@ dmas.put.model <- function(model, apikey, infoid, varnum=NA) {
     progressNames <- 100 * 1/7
     progressOther <- 100 * 1/7
 
-    cmdline2 <- substr(gsub("#", "%32", capture.output(model$call)), 1, 100)
+    cmdline2 <- substr(gsub("#", "%23", capture.output(model$call)), 1, 100)
 
     summy <- summary(model)
 
