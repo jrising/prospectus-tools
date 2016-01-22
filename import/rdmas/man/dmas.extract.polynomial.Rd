@@ -4,7 +4,7 @@
 \alias{dmas.extract.polynomial}
 \title{Extract a polynomial model}
 \usage{
-dmas.extract.polynomial(apikey, coeffs, lowbound, highbound, infoid, id)
+dmas.extract.polynomial(apikey, coeffs, lowbound, highbound, infoid, id = NA)
 }
 \arguments{
 \item{apikey}{API Key provided by DMAS}

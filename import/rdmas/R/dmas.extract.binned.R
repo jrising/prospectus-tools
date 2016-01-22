@@ -15,7 +15,7 @@ dmas.extract.binned <- function(apikey, endpoints, coeffs, infoid, id=NA) {
         id <- DMAS_LAST_RESULT
     }
 
-    dmas.urlstr <- sprintf("extract_stata_binned?apikey=%s&endpoints=%s&coeffs=%s&infoid=%s&id=%s", apikey, paste(endpoints, sep=","), paste(coeffs, sep=","), infoid, id)
+    dmas.urlstr <- sprintf("extract_estimate_binned?apikey=%s&endpoints=%s&coeffs=%s&infoid=%s&id=%s", apikey, paste(endpoints, collapse=","), paste(coeffs, collapse=","), infoid, id)
 
     dmas.get.api(dmas.urlstr, as.model=T)
 }

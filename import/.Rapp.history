@@ -1,3 +1,347 @@
+#' Calculate Fictional Observation Weights#
+#'#
+#' Determines the coeffiicients for terms in the fictional observations,#
+#' to ensure a given weight relative to the normal observations.#
+#'#
+#' @param formula lm-style formula#
+#' @param label the term to be used in fictional observations#
+#' @param ratio desired ratio of observed and fictional data#
+#' @param data optional data frame#
+#' @return Coefficients for fictional observations#
+#' @examples#
+#' calc.fo.weights(Sepal.Length ~ Petal.Length + Sepal.Width : Species, "Sepal.WidthSpecies", 5, data=iris)#
+#
+calc.fo.weights <- function(formula, label, ratio, data) {#
+    mod.lm <- lm(formula, data)#
+    sumerr <- sum(mod.lm$residuals^2)#
+#
+    ## Collect the beta values for all of these#
+    dummies <- substr(names(mod.lm$coefficients), 1, nchar(label)) == label#
+    betas <- mod.lm$coefficients[dummies]#
+#
+    sumerr / (ratio * sum(dummies) * var(betas))#
+}
+calc.fo.weights(Sepal.Length ~ Petal.Length + Sepal.Width : Species, "Sepal.WidthSpecies", 5, data=iris)
+lm(Sepal.Length ~ Petal.Length + Sepal.Width : Species, data=iris)
+calc.fo.weights(Sepal.Length ~ Petal.Length + Sepal.Width : Species, "Sepal.Width:Species", 5, data=iris)
+#' Create fictional observations for a hyper relationship#
+#'#
+#' Return a data frame with fictional observations#
+#'#
+#' @param nonhyper name of the non-hyper column#
+#' @param hyper name of the hyper column#
+#' @param weight weight to be used in the rows#
+#' @param data a data frame for inspecting levels#
+#' @return Fictional observations in a data frame#
+#' @examples#
+#' make.hyper.rows("Species", "hyperSpecies", 5, iris)#
+#
+make.hyper.rows <- function(nonhyper, hyper, weight, data, sep="") {#
+    ## Construct extra from diagonal factor matrix#
+    extras <- diag(weight, length(unique(data[, nonhyper])))#
+    extras <- as.data.frame(extras)#
+#
+    names(extras) <- paste(nonhyper, unique(data[, nonhyper]), sep=sep)#
+#
+    ## Add in the hyper column#
+    extras[, hyper] <- -weight#
+#
+    extras#
+}
+make.hyper.rows("Species", "hyperSpecies", 5, iris)
+#' Fit an hierarchical model#
+#'#
+#' Interpret a hierarchical formula and fit it with the given data and weight ratios.#
+#'#
+#' @param formula an hierlm-style formula#
+#' @param datas a data frame or a list of data frames, for each lm-style formula contained in the hierlm#
+#' @param ratios a vector a ratios for the effect of fictional#
+#'   observations, with length as large as the number of hyper#
+#'   expressions.#
+#' @return A fitted lm model#
+#' @examples#
+#' hierlm(Sepal.Length ~ Petal.Length + Species + Sepal.Width : Species | Species - ., iris, 1)#
+#' hierlm(Sepal.Length ~ Petal.Length + Species + Sepal.Width : Species | Species - . | Sepal.Width : Species - ., iris, c(1, 2))#
+#
+hierlm <- function(formula, datas, ratios, sep="") {#
+    if (is.data.frame(datas))#
+        datas <- list(datas)#
+#
+    data.ii <- 1#
+    ratio.ii <- 1#
+#
+    data <- datas[data.ii]#
+#
+    ## Split the formula by |#
+    labels <- attr(terms(formula), 'term.labels')#
+    if (length(labels) == 1) { # otherwise it's just an lm formula#
+        chunks <- strsplit(labels, "\\|")[[1]]#
+        formula <- as.formula(chunks[1], env=attr(formula1, '.Environment'))#
+        for (chunk in chunks[-1]) {#
+            formula <- combine.formulae(formula, chunk)#
+            terms <- get.hyper.terms(chunk)#
+            if (length(terms) == 3) {#
+                ## Build the new relationship#
+                weight <- calc.fo.weights(formula, terms[1], ratios[ratio.ii], datas[[data.ii]]) # use original data#
+                extras <- make.hyper.rows(terms[1], terms[2], weight, datas[[data.ii]])#
+#
+                ## Done with this ratio#
+                ratio.ii <- ratio.ii + 1#
+#
+                ## Create indicators for nonhyper, if not already done#
+                if (terms[1] %in% data)#
+                    data <- replace.factor(terms[1], data, 1, sep=sep)#
+#
+                data <- combine.data.frames(data, extras)#
+            } else {#
+                ## Add in the next formula#
+                data.ii <- data.ii + 1#
+                data <- combine.data.frame(data, datas[[data.ii]])#
+            }#
+        }#
+    }#
+#
+    lm(formula, data=data)#
+}
+hierlm(Sepal.Length ~ Petal.Length + Species + Sepal.Width : Species | Species - ., iris, 1)
+iris
+formula = Sepal.Length ~ Petal.Length + Species + Sepal.Width : Species | Species - .
+data = iris
+ratios = 1
+if (is.data.frame(datas))#
+        datas <- list(datas)#
+#
+    data.ii <- 1#
+    ratio.ii <- 1#
+#
+    data <- datas[data.ii]
+datas = iris
+if (is.data.frame(datas))#
+        datas <- list(datas)#
+#
+    data.ii <- 1#
+    ratio.ii <- 1#
+#
+    data <- datas[data.ii]
+## Split the formula by |#
+    labels <- attr(terms(formula), 'term.labels')#
+    if (length(labels) == 1) { # otherwise it's just an lm formula#
+        chunks <- strsplit(labels, "\\|")[[1]]#
+        formula <- as.formula(chunks[1], env=attr(formula1, '.Environment'))#
+        for (chunk in chunks[-1]) {#
+            formula <- combine.formulae(formula, chunk)#
+            terms <- get.hyper.terms(chunk)#
+            if (length(terms) == 3) {#
+                ## Build the new relationship#
+                weight <- calc.fo.weights(formula, terms[1], ratios[ratio.ii], datas[[data.ii]]) # use original data#
+                extras <- make.hyper.rows(terms[1], terms[2], weight, datas[[data.ii]])#
+#
+                ## Done with this ratio#
+                ratio.ii <- ratio.ii + 1#
+#
+                ## Create indicators for nonhyper, if not already done#
+                if (terms[1] %in% data)#
+                    data <- replace.factor(terms[1], data, 1, sep=sep)#
+#
+                data <- combine.data.frames(data, extras)#
+            } else {#
+                ## Add in the next formula#
+                data.ii <- data.ii + 1#
+                data <- combine.data.frame(data, datas[[data.ii]])#
+            }#
+        }#
+    }
+#' Fit an hierarchical model#
+#'#
+#' Interpret a hierarchical formula and fit it with the given data and weight ratios.#
+#'#
+#' @param formula an hierlm-style formula#
+#' @param datas a data frame or a list of data frames, for each lm-style formula contained in the hierlm#
+#' @param ratios a vector a ratios for the effect of fictional#
+#'   observations, with length as large as the number of hyper#
+#'   expressions.#
+#' @return A fitted lm model#
+#' @examples#
+#' hierlm(Sepal.Length ~ Petal.Length + Species + Sepal.Width : Species | Species - ., iris, 1)#
+#' hierlm(Sepal.Length ~ Petal.Length + Species + Sepal.Width : Species | Species - . | Sepal.Width : Species - ., iris, c(1, 2))#
+#
+hierlm <- function(formula, datas, ratios, sep="") {#
+    if (is.data.frame(datas))#
+        datas <- list(datas)#
+#
+    data.ii <- 1#
+    ratio.ii <- 1#
+#
+    data <- datas[data.ii]#
+#
+    ## Split the formula by |#
+    labels <- attr(terms(formula), 'term.labels')#
+    if (length(labels) == 1) { # otherwise it's just an lm formula#
+        chunks <- strsplit(labels, "\\|")[[1]]#
+        formula <- as.formula(chunks[1], env=attr(formula1, '.Environment'))#
+        for (chunk in chunks[-1]) {#
+            print(chunk)#
+            formula <- combine.formulae(formula, chunk)#
+            terms <- get.hyper.terms(chunk)#
+            if (length(terms) == 3) {#
+                ## Build the new relationship#
+                weight <- calc.fo.weights(formula, terms[1], ratios[ratio.ii], datas[[data.ii]]) # use original data#
+                extras <- make.hyper.rows(terms[1], terms[2], weight, datas[[data.ii]])#
+#
+                ## Done with this ratio#
+                ratio.ii <- ratio.ii + 1#
+#
+                ## Create indicators for nonhyper, if not already done#
+                if (terms[1] %in% data)#
+                    data <- replace.factor(terms[1], data, 1, sep=sep)#
+#
+                data <- combine.data.frames(data, extras)#
+            } else {#
+                ## Add in the next formula#
+                data.ii <- data.ii + 1#
+                data <- combine.data.frame(data, datas[[data.ii]])#
+            }#
+        }#
+    }#
+#
+    lm(formula, data=data)#
+}
+formula = Sepal.Length ~ Petal.Length + Species + Sepal.Width : Species | Species - .
+hierlm(Sepal.Length ~ Petal.Length + Species + Sepal.Width : Species | Species - ., iris, 1)
+#' Fit an hierarchical model#
+#'#
+#' Interpret a hierarchical formula and fit it with the given data and weight ratios.#
+#'#
+#' @param formula an hierlm-style formula#
+#' @param datas a data frame or a list of data frames, for each lm-style formula contained in the hierlm#
+#' @param ratios a vector a ratios for the effect of fictional#
+#'   observations, with length as large as the number of hyper#
+#'   expressions.#
+#' @return A fitted lm model#
+#' @examples#
+#' hierlm(Sepal.Length ~ Petal.Length + Species + Sepal.Width : Species | Species - ., iris, 1)#
+#' hierlm(Sepal.Length ~ Petal.Length + Species + Sepal.Width : Species | Species - . | Sepal.Width : Species - ., iris, c(1, 2))#
+#
+hierlm <- function(formula, datas, ratios, sep="") {#
+    if (is.data.frame(datas))#
+        datas <- list(datas)#
+#
+    data.ii <- 1#
+    ratio.ii <- 1#
+#
+    data <- datas[data.ii]#
+#
+    ## Split the formula by |#
+    labels <- attr(terms(formula), 'term.labels')#
+    if (length(labels) == 1) { # otherwise it's just an lm formula#
+        chunks <- strsplit(labels, "\\|")[[1]]#
+        print(chunks)#
+        formula <- as.formula(chunks[1], env=attr(formula1, '.Environment'))#
+        for (chunk in chunks[-1]) {#
+            print(chunk)#
+            formula <- combine.formulae(formula, chunk)#
+            terms <- get.hyper.terms(chunk)#
+            if (length(terms) == 3) {#
+                ## Build the new relationship#
+                weight <- calc.fo.weights(formula, terms[1], ratios[ratio.ii], datas[[data.ii]]) # use original data#
+                extras <- make.hyper.rows(terms[1], terms[2], weight, datas[[data.ii]])#
+#
+                ## Done with this ratio#
+                ratio.ii <- ratio.ii + 1#
+#
+                ## Create indicators for nonhyper, if not already done#
+                if (terms[1] %in% data)#
+                    data <- replace.factor(terms[1], data, 1, sep=sep)#
+#
+                data <- combine.data.frames(data, extras)#
+            } else {#
+                ## Add in the next formula#
+                data.ii <- data.ii + 1#
+                data <- combine.data.frame(data, datas[[data.ii]])#
+            }#
+        }#
+    }#
+#
+    lm(formula, data=data)#
+}
+hierlm(Sepal.Length ~ Petal.Length + Species + Sepal.Width : Species | Species - ., iris, 1)
+#' Fit an hierarchical model#
+#'#
+#' Interpret a hierarchical formula and fit it with the given data and weight ratios.#
+#'#
+#' @param formula an hierlm-style formula#
+#' @param datas a data frame or a list of data frames, for each lm-style formula contained in the hierlm#
+#' @param ratios a vector a ratios for the effect of fictional#
+#'   observations, with length as large as the number of hyper#
+#'   expressions.#
+#' @return A fitted lm model#
+#' @examples#
+#' hierlm(Sepal.Length ~ Petal.Length + Species + Sepal.Width : Species | Species - ., iris, 1)#
+#' hierlm(Sepal.Length ~ Petal.Length + Species + Sepal.Width : Species | Species - . | Sepal.Width : Species - ., iris, c(1, 2))#
+#
+hierlm <- function(formula, datas, ratios, sep="") {#
+    if (is.data.frame(datas))#
+        datas <- list(datas)#
+#
+    data.ii <- 1#
+    ratio.ii <- 1#
+#
+    data <- datas[data.ii]#
+#
+    ## Split the formula by |#
+    labels <- attr(terms(formula), 'term.labels')#
+    if (length(labels) == 1) { # otherwise it's just an lm formula#
+        chunks <- strsplit(labels, "\\|")[[1]]#
+        print(chunks)#
+        formula <- as.formula(chunks[1], env=attr(formula, '.Environment'))#
+        for (chunk in chunks[-1]) {#
+            print(chunk)#
+            formula <- combine.formulae(formula, chunk)#
+            terms <- get.hyper.terms(chunk)#
+            if (length(terms) == 3) {#
+                ## Build the new relationship#
+                weight <- calc.fo.weights(formula, terms[1], ratios[ratio.ii], datas[[data.ii]]) # use original data#
+                extras <- make.hyper.rows(terms[1], terms[2], weight, datas[[data.ii]])#
+#
+                ## Done with this ratio#
+                ratio.ii <- ratio.ii + 1#
+#
+                ## Create indicators for nonhyper, if not already done#
+                if (terms[1] %in% data)#
+                    data <- replace.factor(terms[1], data, 1, sep=sep)#
+#
+                data <- combine.data.frames(data, extras)#
+            } else {#
+                ## Add in the next formula#
+                data.ii <- data.ii + 1#
+                data <- combine.data.frame(data, datas[[data.ii]])#
+            }#
+        }#
+    }#
+#
+    lm(formula, data=data)#
+}
+hierlm(Sepal.Length ~ Petal.Length + Species + Sepal.Width : Species | Species - ., iris, 1)
+Sepal.Length ~ Petal.Length + Species + Sepal.Width : Species | Species - .
+datas
+if (is.data.frame(datas))#
+        datas <- list(datas)#
+#
+    data.ii <- 1#
+    ratio.ii <- 1#
+#
+    data <- datas[data.ii]#
+#
+    ## Split the formula by |#
+    labels <- attr(terms(formula), 'term.labels')
+labels
+chunks <- strsplit(labels, "\\|")[[1]]
+formula <- as.formula(chunks[1], env=attr(formula, '.Environment'))
+as.formula(chunks[1])
+formula
+Sepal.Length ~ Petal.Length + Species + Sepal.Width:Species
+as.formula(Sepal.Length ~ Petal.Length + Species + Sepal.Width:Species)
+as.formula(Sepal.Length ~ Petal.Length + Species + Sepal.Width:Species, env=attr(formula, '.Environment'))
 as.formula("Sepal.Length ~ Petal.Length + Species + Sepal.Width:Species", env=attr(formula, '.Environment'))
 as.formula(chunks[1], env=attr(formula, '.Environment'))
 chunks[1]
@@ -3552,12 +3896,26 @@ la <- extract(fit, permute=T)#
 colMeans(la$mu)
 plot(fit)
 matrix(c(1, .5, 0, .5), 2, 2)
+?image
+library(foreign)#
+xx = read.dta("~/groups/aggregator/trunk/acra/crops/NASS_1950_2005_from_wolfram.dta")
+xx[1,]
+library(PBSmapping)
+?PBSmapping
+library(gtools)
+?gtools
+c("test", 3)
+'a'
+library(devtools)#
+library(roxygen2)#
+#
 setwd("~/projects/dmas/tools/import/rdmas")#
 document()#
 setwd("..")#
 install("rdmas")
 library(devtools)#
-library(roxygen2)
+library(roxygen2)#
+#
 setwd("~/projects/dmas/tools/import/rdmas")#
 document()#
 setwd("..")#
@@ -3568,92 +3926,7 @@ group <- gl(2, 10, 20, labels = c("Ctl","Trt"))#
 weight <- c(ctl, trt)#
 lm.D9 <- lm(weight ~ group)
 dmas.put.model(lm.D9, "4sW2Txtsn8o3bkwY", "LEAVE-BLANK")
-dmas.put.model(lm.D9, "4sW2Txtsn8o3bkwY", "LEAVE-BLANK")
-setwd("~/projects/dmas/tools/import/rdmas")#
-document()#
-setwd("..")#
-install("rdmas")
-dmas.put.model(lm.D9, "4sW2Txtsn8o3bkwY", "LEAVE-BLANK")
-setwd("~/projects/dmas/tools/import/rdmas")#
-document()#
-setwd("..")#
-install("rdmas")
-dmas.put.model(lm.D9, "4sW2Txtsn8o3bkwY", "LEAVE-BLANK")
-?readLines
-dmas.put.model(lm.D9, "4sW2Txtsn8o3bkwY", "LEAVE-BLANK")
-dmas.put.model(lm.D9, "4sW2Txtsn8o3bkwY", "LEAVE-BLANK")
-dmas.put.model(lm.D9, "4sW2Txtsn8o3bkwY", "LEAVE-BLANK")
-setwd("~/projects/dmas/tools/import/rdmas")#
-document()#
-setwd("..")#
-install("rdmas")
-setwd("~/projects/dmas/tools/import/rdmas")#
-document()#
-setwd("..")#
-install("rdmas")
-dmas.put.model(lm.D9, "4sW2Txtsn8o3bkwY", "LEAVE-BLANK")
-dmas.put.model(lm.D9, "4sW2Txtsn8o3bkwY", "LEAVE-BLANK")
-setwd("~/projects/dmas/tools/import/rdmas")#
-document()#
-setwd("..")#
-install("rdmas")
-dmas.put.model(lm.D9, "4sW2Txtsn8o3bkwY", "LEAVE-BLANK")
-library(lfe)
-?felm
-x <- rnorm(1000)#
-x2 <- rnorm(length(x))#
-#
-## individual and firm#
-id <- factor(sample(20,length(x),replace=TRUE))#
-firm <- factor(sample(13,length(x),replace=TRUE))#
-#
-## effects for them#
-id.eff <- rnorm(nlevels(id))#
-firm.eff <- rnorm(nlevels(firm))#
-#
-## left hand side#
-u <- rnorm(length(x))#
-y <- x + 0.5*x2 + id.eff[id] + firm.eff[firm] + u#
-#
-## estimate and print result#
-est <- felm(y ~ x+x2| id + firm)
-dmas.put.model(est, "4sW2Txtsn8o3bkwY", "LEAVE-BLANK")
-setwd("~/projects/dmas/tools/import/rdmas")#
-document()#
-setwd("..")#
-install("rdmas")
-dmas.put.model(est, "4sW2Txtsn8o3bkwY", "LEAVE-BLANK")
-summary(est)
-summary(est)$rdf
-class(summary(est)$rdf)
-sprint("%d", summary(est)$rdf)
-sprintf("%d", summary(est)$rdf)
-sprintf("%d", est$N)
-sprintf("%d", est$df)
-setwd("~/projects/dmas/tools/import/rdmas")#
-document()#
-setwd("..")#
-install("rdmas")
-dmas.put.model(est, "4sW2Txtsn8o3bkwY", "LEAVE-BLANK")
-est$coeff
-names(est$coeff)
-length(est$coeff)
-est$coeff[2]
-colnames(est$coeff)
-rownames(est$coeff)
-setwd("~/projects/dmas/tools/import/rdmas")#
-document()#
-setwd("..")#
-install("rdmas")
-dmas.put.model(est, "4sW2Txtsn8o3bkwY", "LEAVE-BLANK")
-setwd("~/projects/dmas/tools/import/rdmas")#
-document()#
-setwd("..")#
-install("rdmas")
-dmas.put.model(est, "4sW2Txtsn8o3bkwY", "LEAVE-BLANK")
-dmas.put.model(est, "ixfWRLLueXO6LjQL", "LEAVE-BLANK")
-? install_github
-install_github("prospectus-tools", "jrising", "import/rdmas")
-?install_github
-install_github("jrising/prospectus-tools", "import/rdmas")
-install_github("jrising/prospectus-tools", subdir="import/rdmas")
+dmas.put.model(lm.D9, "ixfWRLLueXO6LjQL", "LEAVE-BLANK") #"4sW2Txtsn8o3bkwY", "LEAVE-BLANK")
+lm.D9
+summary(lm.D9)
+dmas.extract.single("ixfWRLLueXO6LjQL", "groupTrt", "LEAVE-BLANK")
