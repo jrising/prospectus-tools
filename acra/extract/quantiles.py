@@ -15,6 +15,7 @@ with open(sys.argv[1], 'r') as fp:
 
     do_montecarlo = config['do-montecarlo']
     do_adaptation = config['do-adaptation'] == True
+    do_gcmweights = config.get('do-gcmweights', True)
     do_yearsets = config['do-yearsets']
     do_yearsetmeans = config['do-yearsetmeans']
     do_rcp_only = config['only-rcp']
@@ -127,15 +128,25 @@ for impact in allimpacts:
                     allweights = []
 
                     for collection in data[dist][region]:
+                        if not do_gcmweights and allow_partial == 0:
+                            print "Warning: Not using GCM weights, but still using the number of GCM weighted models for limiting batches.  Set allow-partial > 0 to remove warning."
+                            allow_partial = len(model_weights)
                         if len(data[dist][region][collection]) >= (allow_partial if allow_partial > 0 else len(model_weights)):
-                            (values, valueweights) = weights.weighted_values(data[dist][region][collection], model_weights)
-                            if isinstance(values[0], list):
-                                for ii in range(len(values)):
-                                    allvalues += values[ii]
-                                    allweights += [valueweights[ii]] * len(values[ii])
+                            if do_gcmweights:
+                                (values, valueweights) = weights.weighted_values(data[dist][region][collection], model_weights)
+                                if len(values) == 0:
+                                    print "Cannot find any values for weighted models."
+                                    continue
+                                if isinstance(values[0], list):
+                                    for ii in range(len(values)):
+                                        allvalues += values[ii]
+                                        allweights += [valueweights[ii]] * len(values[ii])
+                                else:
+                                    allvalues += values
+                                    allweights += valueweights
                             else:
-                                allvalues += values
-                                allweights += valueweights
+                                allvalues += data[dist][region][collection].values()
+                                allweights += [1.] * len(data[dist][region][collection])
 
                     print dist, region, len(allvalues)
                     if len(allvalues) == 0:
