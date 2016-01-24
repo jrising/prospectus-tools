@@ -13,6 +13,11 @@ with open(sys.argv[1], 'r') as fp:
     root = config['results-root']
     outdir = config['output-dir']
 
+    output_format = config.get('output-format', "edfcsv")
+    if output_format not in ['edfcsv', 'valuescsv']:
+        print "Error: output-format must be edfcsv or valuescsv."
+        exit()
+    
     do_montecarlo = config['do-montecarlo']
     do_adaptation = config['do-adaptation'] == True
     do_gcmweights = config.get('do-gcmweights', True)
@@ -120,7 +125,10 @@ for impact in allimpacts:
 
             with open(os.path.join(outdir, impact + '-' + dist + '.csv'), 'w') as csvfp:
                 writer = csv.writer(csvfp, quoting=csv.QUOTE_MINIMAL)
-                writer.writerow(['region'] + map(lambda q: 'q' + str(q), evalpvals))
+                if output_format == 'edfcsv':
+                    writer.writerow(['region'] + map(lambda q: 'q' + str(q), evalpvals))
+                elif output_format == 'valuescsv':
+                    writer.writerow(['region', 'value', 'weight'])
 
                 for region in data[dist].keys():
 
@@ -152,12 +160,10 @@ for impact in allimpacts:
                     if len(allvalues) == 0:
                         continue
 
-                    distribution = weights.WeightedECDF(allvalues, allweights)
+                    if output_format == 'edfcsv':
+                        distribution = weights.WeightedECDF(allvalues, allweights)
 
-                    #with open(os.path.join(outdir, 'debug-' + impact + '-' + dist + '.csv'), 'w') as debugfp:
-                    #    debug_writer = csv.writer(debugfp, quoting=csv.QUOTE_MINIMAL)
-                    #    debug_writer.writerow(['value', 'weight', 'pp'])
-                    #    for ii in range(len(distribution.values)):
-                    #        debug_writer.writerow([distribution.values[ii], distribution.weights[ii], distribution.pp[ii]])
-
-                    writer.writerow([region] + list(distribution.inverse(evalpvals)))
+                        writer.writerow([region] + list(distribution.inverse(evalpvals)))
+                    elif output_format == 'valuescsv':
+                        for ii in range(len(allvalues)):
+                            writer.writerow([region, allvalues[ii], allweights[ii]])
