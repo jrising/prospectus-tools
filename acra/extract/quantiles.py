@@ -128,12 +128,14 @@ for impact in allimpacts:
                 if output_format == 'edfcsv':
                     writer.writerow(['region'] + map(lambda q: 'q' + str(q), evalpvals))
                 elif output_format == 'valuescsv':
-                    writer.writerow(['region', 'value', 'weight'])
+                    writer.writerow(['region', 'collection', 'model', 'value', 'weight'])
 
                 for region in data[dist].keys():
 
                     allvalues = []
                     allweights = []
+                    allmodels = []
+                    allcollections = []
 
                     for collection in data[dist][region]:
                         if not do_gcmweights and allow_partial == 0:
@@ -149,12 +151,18 @@ for impact in allimpacts:
                                     for ii in range(len(values)):
                                         allvalues += values[ii]
                                         allweights += [valueweights[ii]] * len(values[ii])
+                                        allmodels += ['unimplemented-case'] * len(values[ii])
+                                        allcollections += [collection] * len(values[ii])
                                 else:
                                     allvalues += values
                                     allweights += valueweights
+                                    allmodels += data[dist][region][collection].keys()
+                                    allcollections += [collection] * len(values)
                             else:
                                 allvalues += data[dist][region][collection].values()
                                 allweights += [1.] * len(data[dist][region][collection])
+                                allmodels += data[dist][region][collection].keys()
+                                allcollections += [collection] * len(data[dist][region][collection])
 
                     print dist, region, len(allvalues)
                     if len(allvalues) == 0:
@@ -166,4 +174,4 @@ for impact in allimpacts:
                         writer.writerow([region] + list(distribution.inverse(evalpvals)))
                     elif output_format == 'valuescsv':
                         for ii in range(len(allvalues)):
-                            writer.writerow([region, allvalues[ii], allweights[ii]])
+                            writer.writerow([region, allcollections[ii], allmodels[ii], allvalues[ii], allweights[ii]])
