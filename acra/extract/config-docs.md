@@ -2,7 +2,11 @@
 
 ## `results-root`
 
-Directory containing the impacts results tree
+Directory containing the impacts results tree.  To do a Monte Carlo
+run (see `do-montecarlo`), this directory should contain directories
+named `batch-0`, `batch-1`, and so on.  To do a constant p-value run,
+or a single batch from a Monte Carlo run, this directory should end
+with the batch directory itself (and should contain RCP directories).
 
 ## `output-dir`
 
