@@ -1,0 +1,42 @@
+# Directory containing the impacts results tree
+results-root: /shares/gcp/outputs/impacts/impacts
+# Directory to write output quantile files
+output-dir: nopattern
+
+# Aggregation level; one of county, state, region, or national
+level: national
+
+output-format: valuescsv
+
+# Calculate values over the Monte Carlo results?
+do-montecarlo: yes
+# Calculate adaptation results: One of no, yes, and comparison
+do-adaptation: no
+
+# Collect results into sets of years?
+do-yearsets: yes
+# Report the mean of these sets of years?
+do-yearsetmeans: yes
+
+# Perform operations for only one RCP or realization?
+only-rcp: rcp85
+only-realization: null # e.g., 001
+# Which impacts should be included?  List or all
+only-impacts: ['energy-residential']
+# Which GCM models should we include?  List or all
+only-models: [bcc-csm1-1, bnu-esm, canesm2, ccsm4, cesm1-cam5, csiro-mk3-6-0, fgoals-g2, gfdl-cm3, gfdl-esm2g, giss-e2-r, hadgem2-ao, hadgem2-es, ipsl-cm5a-lr, ipsl-cm5a-mr, miroc5, miroc-esm, miroc-esm-chem, mpi-esm-lr, mpi-esm-mr, mri-cgcm3, noresm1-m, noresm1-me, access1-0, access1-3, bcc-csm1-1-m, cesm1-bgc, cmcc-cm, cnrm-cm5, fio-esm, gfdl-esm2m, giss-e2-h-cc, giss-e2-r-cc, hadgem2-cc, inmcm4, ipsl-cm5b-lr]
+
+# Which column to read from the files (starting from 2, the final result)
+column: 2
+
+# Include results without a full set of models?
+# Specify the least models to allow, or 0 to require all
+allow-partial: 1
+
+# Files to check within impact directories
+checks: [check-20140609, cgechk-20140609]
+
+# Number of batches to include
+# For ACP, county levels 5, state and region had 10, national had 25
+# May also be 'truehist'
+batches: 25
