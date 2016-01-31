@@ -14,3 +14,5 @@ Start by setting up a configuration file.  A few configuration files are include
 ```
 python quantiles.py <your configuration file.yml>
 ```
+
+Short comments are in the `quantile-configs` configurations; more details are in the [configuration documentation](config-docs.md).

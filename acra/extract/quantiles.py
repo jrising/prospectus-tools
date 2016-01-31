@@ -17,7 +17,7 @@ with open(sys.argv[1], 'r') as fp:
     if output_format not in ['edfcsv', 'valuescsv']:
         print "Error: output-format must be edfcsv or valuescsv."
         exit()
-    
+
     do_montecarlo = config['do-montecarlo']
     do_adaptation = config['do-adaptation'] == True
     do_gcmweights = config.get('do-gcmweights', True)
@@ -65,7 +65,9 @@ for impact in allimpacts:
     if do_montecarlo:
         iterator = results.iterate_montecarlo(root, batches=batches)
     else:
-        iterator = results.iterate_byp(root)
+        if root[-1] == '/':
+            root = root[0:-1]
+        iterator = results.iterate_batch(*os.path.split(root))
 
     for (batch, rcp, model, realization, pvals, targetdir) in iterator:
         if checks is not None and not results.directory_contains(targetdir, checks):
