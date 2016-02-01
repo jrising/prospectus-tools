@@ -1,5 +1,5 @@
 # Directory containing the impacts results tree
-results-root: /shares/gcp/outputs/impacts/impacts-adapt
+results-root: /shares/gcp/outputs/impacts/adaptation/national-adapt
 # Directory to write output quantile files
 output-dir: bynational-adapt
 
