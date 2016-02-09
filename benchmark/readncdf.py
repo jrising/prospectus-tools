@@ -18,6 +18,7 @@ for root, dirs, files in os.walk(sys.argv[1]):
             timestart = time.time()
             rootgrp = Dataset(filepath, 'r+', format='NETCDF4')
             alldata = rootgrp.variables[variable][:,:]
+            print alldata[:, 100]
             size = alldata.size
             del alldata
             timeend = time.time()
