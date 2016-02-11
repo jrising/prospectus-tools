@@ -99,13 +99,15 @@ def iterate_bundle(targetdir, impact, suffix, working_suffix=''):
     os.system("tar -xzf " + os.path.join(targetdir, impact + suffix + ".tar.gz"))
     os.chdir('..')
 
-    for name in os.listdir(os.path.join('working' + working_suffix, impact + suffix)):
-        if name == impact:
-            continue # just the directory
+    impactdir = os.path.join('working' + working_suffix, impact + suffix)
+    if os.path.exists(impactdir):
+        for name in os.listdir(impactdir):
+            if name == impact:
+                continue # just the directory
 
-        region = name[0:-4]
+            region = name[0:-4]
 
-        with open(os.path.join('working' + working_suffix, impact + suffix, name)) as fp:
-            yield (region, fp)
+            with open(os.path.join('working' + working_suffix, impact + suffix, name)) as fp:
+                yield (region, fp)
 
     os.system('rm -r working' + working_suffix)

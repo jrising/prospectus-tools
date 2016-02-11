@@ -2,36 +2,25 @@ import tarfile, os, csv, sys
 import numpy as np
 import yaml
 
-from lib import results, bundles, weights, impacts
+from lib import results, bundles, weights, impacts, configs
 
-if len(sys.argv) < 2:
-    print "Specify the configuration file on the command-line."
+config = configs.read_default_config()
 
-with open(sys.argv[1], 'r') as fp:
-    config = yaml.load(fp)
+outdir = config['output-dir']
 
-    root = config['results-root']
-    outdir = config['output-dir']
-
-    output_format = config.get('output-format', "edfcsv")
-    if output_format not in ['edfcsv', 'valuescsv']:
-        print "Error: output-format must be edfcsv or valuescsv."
-        exit()
-
-    do_montecarlo = config['do-montecarlo']
-    do_adaptation = config['do-adaptation'] == True
-    do_gcmweights = config.get('do-gcmweights', True)
-    do_yearsets = config['do-yearsets']
-    do_yearsetmeans = config['do-yearsetmeans']
-    do_rcp_only = config['only-rcp']
-    do_realization_only = config['only-realization']
-    allimpacts = config['only-impacts'] if config.get('only-impacts', 'all') != 'all' else impacts.allimpacts
-    allmodels = config['only-models'] if config.get('only-models', 'all') != 'all' else None
-    suffix = {'county': '', 'state': '-state', 'region': '-region', 'national': '-national'}[config['level']]
-    column = config['column']
-    allow_partial = config['allow-partial']
-    checks = config['checks']
-    batches = range(config['batches']) if isinstance(config['batches'], int) else config['batches']
+output_format = config.get('output-format', "edfcsv")
+if output_format not in ['edfcsv', 'valuescsv']:
+    print "Error: output-format must be edfcsv or valuescsv."
+    exit()
+    
+do_gcmweights = config.get('do-gcmweights', True)
+do_yearsets = config['do-yearsets']
+do_yearsetmeans = config['do-yearsetmeans']
+allimpacts = config['only-impacts'] if config.get('only-impacts', 'all') != 'all' else impacts.allimpacts
+suffix = configs.get_suffix(config)
+column = config['column']
+allow_partial = config['allow-partial']
+batches = range(config['batches']) if isinstance(config['batches'], int) else config['batches']
 
 evalpvals = list(np.linspace(.01, .99, 99))
 
@@ -50,9 +39,6 @@ if do_yearsetmeans:
 else:
     combine_years = lambda x: x
 
-if do_adaptation:
-    batches = map(lambda i: 'batch-adapt-' + str(i), batches)
-
 if not os.path.exists(outdir):
     os.mkdir(outdir)
 
@@ -62,28 +48,7 @@ for impact in allimpacts:
     # Collect all available results
     data = {} # { rcp-year0 => { region => { batch-realization => { model => value } } } }
 
-    if do_montecarlo:
-        iterator = results.iterate_montecarlo(root, batches=batches)
-    else:
-        if root[-1] == '/':
-            root = root[0:-1]
-        iterator = results.iterate_batch(*os.path.split(root))
-
-    for (batch, rcp, model, realization, pvals, targetdir) in iterator:
-        if checks is not None and not results.directory_contains(targetdir, checks):
-            print targetdir, "missing", checks
-            continue
-
-        if do_rcp_only and rcp != do_rcp_only:
-            continue
-        if do_realization_only and realization != do_realization_only:
-            continue
-        if allmodels is not None and model not in allmodels:
-            continue
-
-        if impact + suffix + ".tar.gz" not in os.listdir(targetdir):
-            continue
-
+    for (batch, rcp, model, realization, pvals, targetdir) in configs.iterate_valid_targets(config, [impact]):
         print targetdir
 
         collection = batch + '-' + realization
