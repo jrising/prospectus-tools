@@ -9,7 +9,7 @@ The syntax for `single.sh` is:
 ./single.sh [weather path] <scenario> <q-value>
 ```
 
- - `[weather path]` is the path to a directory whose sub-directories contain a single NetCDF file for each of the following:
+ - `[weather path]` is the *absolute* path to a directory whose sub-directories contain a single NetCDF file for each of the following:
    - Precipitation (filename contains `pr`)
    - Mean temperature (filename contains `tas`)
    - Maximum temperature (filename contains `tasmax`)
