@@ -42,6 +42,10 @@ Report the mean of these sets of years?
 
 Perform operations for only one RCP or realization?  Set to `null` for all RCPs.
 
+## `only-models` (options: all (default), or list
+
+Only include certain climate models in the results.  e.g., `[hadgem2-ao, hadgem2-es]`.
+
 ## `only-realization` (options: null, or a realization name)
 
 For results that include a realization, either `null` or a single realization number, e.g., `001`
