@@ -14,27 +14,18 @@ def read_default_config():
 def read_config(filename):
     with open(filename, 'r') as fp:
         config = yaml.load(fp)
-
-        allmodels = config.get('only-models', 'all')
-        allow_partial = config.get('allow-partial', 1)
-        if allmodels != 'all' and allow_partial > 0 and allow_partial < len(allmodels):
-            print "Warning: allow-partial specifies a value greater than the number of included models.  Setting equal to the number of models."
-            config['allow-partial'] = len(allmodels)
-        if allmodels != 'all' and allow_partial == 0: # interpret 0 (all) as all allowed
-            config['allow-partial'] = len(allmodels)
-
         return config
 
-def iterate_valid_targets(config, impacts, verbose=True):
+def iterate_valid_targets(config, impacts=None, verbose=True):
     root = config['results-root']
+
     do_montecarlo = config['do-montecarlo']
-    batches = range(config['batches']) if isinstance(config['batches'], int) else config['batches']
-    allmodels = config['only-models'] if config.get('only-models', 'all') != 'all' else None
-    checks = config['checks']
     do_rcp_only = config['only-rcp']
+    
+    allmodels = config['only-models'] if config.get('only-models', 'all') != 'all' else None
 
     if do_montecarlo:
-        iterator = results.iterate_montecarlo(root, batches=batches)
+        iterator = results.iterate_montecarlo(root)
     else:
         if root[-1] == '/':
             root = root[0:-1]

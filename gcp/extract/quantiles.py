@@ -1,4 +1,4 @@
-import tarfile, os, csv, sys
+import os, sys
 import numpy as np
 import yaml
 
@@ -8,29 +8,22 @@ config = configs.read_default_config()
 
 outdir = config['output-dir']
 
-output_format = config.get('output-format', "edfcsv")
-if output_format not in ['edfcsv', 'valuescsv']:
-    print "Error: output-format must be edfcsv or valuescsv."
-    exit()
-
-do_gcmweights = config.get('do-gcmweights', True)
 do_yearsets = config['do-yearsets']
 do_yearsetmeans = config['do-yearsetmeans']
-allimpacts = config['only-impacts'] if config.get('only-impacts', 'all') != 'all' else impacts.allimpacts
-suffix = configs.get_suffix(config)
+do_gcmweights = config.get('do-gcmweights', True)
+
+allimpacts = config.get('only-impacts', None)
+if allimpacts is None:
+    # Look for all impacts
+    for (batch, rcp, model, realization, pvals, targetdir) in configs.iterate_valid_targets(config, [impact]):
+        TODO
+
 column = config['column']
-allow_partial = config['allow-partial']
-batches = range(config['batches']) if isinstance(config['batches'], int) else config['batches']
 
 evalpvals = list(np.linspace(.01, .99, 99))
 
-working_suffix = suffix
-
 if do_yearsets:
-    if batches == 'truehist':
-        yearses = [(0, 20), (-30, 0), (-20, 0)]
-    else:
-        yearses = [(2020, 2039), (2040, 2059), (2080, 2099)]
+    yearses = [(2020, 2039), (2040, 2059), (2080, 2099)]
 else:
     years = range(2000, 2100)
 
