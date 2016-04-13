@@ -16,7 +16,7 @@ for root, dirs, files in os.walk(sys.argv[1]):
 
             memstart = resource.getrusage(resource.RUSAGE_SELF)
             timestart = time.time()
-            rootgrp = Dataset(filepath, 'r+', format='NETCDF4')
+            rootgrp = Dataset(filepath, 'r', format='NETCDF4')
             alldata = rootgrp.variables[variable][:,:]
             print alldata[:, 100]
             size = alldata.size
