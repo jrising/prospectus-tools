@@ -21,7 +21,8 @@ __version__ = "$Revision$"
 import os, csv
 
 def get_yearses(fp, yearses):
-    TODO"""
+    TODO
+    """
     if yearses[0][0] < 1000:
         # Just heads and tails
         reader = csv.reader(fp)
@@ -65,10 +66,12 @@ def get_yearses(fp, yearses):
     if found:
         results.append(values)
 
-    return results"""
+    return results
+"""
 
 def get_years(fp, years, column=2):
-    TODO"""
+    TODO
+    """
     results = []
     reader = csv.reader(fp)
     reader.next()
@@ -91,7 +94,8 @@ def get_years(fp, years, column=2):
         else:
             results.append(None) # row[0] < year
 
-    return results"""
+    return results
+"""
 
 def iterate_bundle(targetdir, filename, column='debased'):
     reader = Dataset(os.path.join(targetdir, filename), 'r', format='NETCDF4')

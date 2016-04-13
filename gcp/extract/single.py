@@ -3,13 +3,18 @@ import sys
 from lib import bundles
 
 column = 'debased'
-region = sys.argv[2]
 
 reader = Dataset(sys.argv[1], 'r', format='NETCDF4')
 
 regions = reader.variables['regions'][:]
 years = reader.variables['years'][:]
 
+if len(sys.argv) < 3:
+    print "Please provide a region:"
+    print regions
+    exit()
+
+region = sys.argv[2]
 ii = regions.index(region)
 data = reader.variables[column][:, ii]
 
