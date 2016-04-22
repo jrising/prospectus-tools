@@ -24,17 +24,20 @@ rcps = ['rcp45', 'rcp85']
 
 def iterate_montecarlo(root, batches=None):
     for subdir in os.listdir(root):
-        if subdir[:5] != 'batch':
+        if 'batch' not in subdir:
             continue
         if batches is not None and subdir not in batches:
             continue
 
-        for result in iterate_batch(root, batch):
+        for result in iterate_batch(root, subdir):
             yield result
 
 def iterate_byp(root):
-    if os.path.exists(os.path.join(root, 'median')):
-        for result in iterate_batch(root, 'median'):
+    for subdir in os.listdir(root):
+        if 'median' not in subdir:
+            continue
+
+        for result in iterate_batch(root, subdir):
             yield result
 
 def recurse_directories(root, levels):
@@ -47,5 +50,5 @@ def recurse_directories(root, levels):
                 yield [subdir] + recurse
 
 def iterate_batch(root, batch):
-    for alldirs in recurse_directories(os.path.join(root, batch)):
+    for alldirs in recurse_directories(os.path.join(root, batch), 4):
         yield [batch] + alldirs

@@ -16,6 +16,9 @@ if len(sys.argv) < 3:
     exit()
 
 region = sys.argv[2]
+if region == 'global':
+    region = ''
+
 ii = regions.tolist().index(region)
 data = reader.variables[column][:, ii]
 

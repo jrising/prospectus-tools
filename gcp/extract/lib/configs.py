@@ -4,6 +4,8 @@ import sys, os
 import yaml
 import results
 
+checks = None
+
 def read_default_config():
     if len(sys.argv) < 2:
         print "Specify the configuration file on the command-line."
@@ -31,7 +33,7 @@ def iterate_valid_targets(config, impacts=None, verbose=True):
             root = root[0:-1]
         iterator = results.iterate_batch(*os.path.split(root))
 
-    for batch, rcp, model, ssp, iam, targetdir in iterator:
+    for batch, rcp, model, iam, ssp, targetdir in iterator:
         if checks is not None and not results.directory_contains(targetdir, checks):
             if verbose:
                 print targetdir, "missing", checks
@@ -44,8 +46,11 @@ def iterate_valid_targets(config, impacts=None, verbose=True):
             print targetdir, "not in", allmodels
             continue
 
-        # Check that at least one of the impacts is here
-        for impact in impacts:
-            if impact + suffix + ".tar.gz" in os.listdir(targetdir):
-                yield batch, rcp, model, ssp, iam, targetdir
-                break
+        if impacts is None:
+            yield batch, rcp, model, iam, ssp, targetdir
+        else:
+            # Check that at least one of the impacts is here
+            for impact in impacts:
+                if impact + ".nc4" in os.listdir(targetdir):
+                    yield batch, rcp, model, iam, ssp, targetdir
+                    break
