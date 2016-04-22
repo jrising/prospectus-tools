@@ -19,5 +19,7 @@ region = sys.argv[2]
 ii = regions.tolist().index(region)
 data = reader.variables[column][:, ii]
 
+print "year,value"
+
 for jj in range(len(years)):
-    print years[jj], data[jj]
+    print str(years[jj]) + ',' + str(data[jj])
