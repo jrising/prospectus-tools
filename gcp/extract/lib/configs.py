@@ -21,7 +21,7 @@ def iterate_valid_targets(config, impacts=None, verbose=True):
 
     do_montecarlo = config['do-montecarlo']
     do_rcp_only = config['only-rcp']
-    
+
     allmodels = config['only-models'] if config.get('only-models', 'all') != 'all' else None
 
     if do_montecarlo:
@@ -31,7 +31,7 @@ def iterate_valid_targets(config, impacts=None, verbose=True):
             root = root[0:-1]
         iterator = results.iterate_batch(*os.path.split(root))
 
-    for (batch, rcp, model, pvals, targetdir) in iterator:
+    for batch, rcp, model, ssp, iam, targetdir in iterator:
         if checks is not None and not results.directory_contains(targetdir, checks):
             if verbose:
                 print targetdir, "missing", checks
@@ -47,5 +47,5 @@ def iterate_valid_targets(config, impacts=None, verbose=True):
         # Check that at least one of the impacts is here
         for impact in impacts:
             if impact + suffix + ".tar.gz" in os.listdir(targetdir):
-                yield (batch, rcp, model, pvals, targetdir)
-                continue
+                yield batch, rcp, model, ssp, iam, targetdir
+                break
