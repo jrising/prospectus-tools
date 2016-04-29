@@ -29,9 +29,11 @@ def iterate_valid_targets(config, impacts=None, verbose=True):
     if do_montecarlo:
         iterator = results.iterate_montecarlo(root)
     else:
-        if root[-1] == '/':
-            root = root[0:-1]
-        iterator = results.iterate_batch(*os.path.split(root))
+        iterator = results.iterate_byp(root)
+        # Logic for a given directory
+        #if root[-1] == '/':
+        #    root = root[0:-1]
+        #iterator = results.iterate_batch(*os.path.split(root))
 
     for batch, rcp, model, iam, ssp, targetdir in iterator:
         if checks is not None and not results.directory_contains(targetdir, checks):

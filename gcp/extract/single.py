@@ -3,7 +3,10 @@ from netCDF4 import Dataset
 
 from lib import bundles
 
-column = 'rebased'
+if len(sys.argv) > 3:
+    column = sys.argv[3]
+else:
+    column = 'rebased'
 
 reader = Dataset(sys.argv[1], 'r', format='NETCDF4')
 
@@ -18,8 +21,12 @@ if len(sys.argv) < 3:
 region = sys.argv[2]
 if region == 'global':
     region = ''
+try:
+    ii = int(region)
+except:
+    ii = regions.tolist().index(region)
+    #print "Region #", ii
 
-ii = regions.tolist().index(region)
 data = reader.variables[column][:, ii]
 
 print "year,value"

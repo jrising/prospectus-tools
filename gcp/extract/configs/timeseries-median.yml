@@ -1,0 +1,15 @@
+# Directory containing the impacts results tree
+results-root: /shares/gcp/outputs/nasmort-cheetah
+# Directory to write output files
+output-dir: /shares/gcp/outputs/timeseries-cheetah-median
+
+# Calculate values over the Monte Carlo results?
+do-montecarlo: no
+
+# Perform operations for only one RCP or realization?
+only-rcp: null # e.g., rcp85
+# Which GCM models should we include?  List or all
+only-models: all
+
+# Which column to read from the files (the final result is 'debased')
+column: debased

@@ -1,9 +1,48 @@
-import os, csv
+import os, sys, csv
 import numpy as np
 
-directory = '/shares/gcp/outputs/timeseries/rcp85-SSP3-global' # no trailing slash!
-histclim = 'interpolated_mortality_all_ages-histclim-aggregated'
-actual = 'interpolated_mortality_all_ages-aggregated'
+directory = sys.argv[1]
+therun = sys.argv[2]
+
+if therun == 'aggfull':
+    histclim = 'interpolated_mortality_all_ages-histclim-aggregated'
+    actual = 'interpolated_mortality_all_ages-aggregated'
+elif therun == 'aggdumb':
+    histclim = 'interpolated_mortality_all_ages-histclim-aggregated'
+    actual = 'interpolated_mortality_dumb_all_ages-aggregated'
+elif therun == 'aggcoma':
+    histclim = 'interpolated_mortality_all_ages-histclim-aggregated'
+    actual = 'interpolated_mortality_comatose_all_ages-aggregated'
+elif therun == 'aggfull0':
+    histclim = None
+    actual = 'interpolated_mortality_all_ages-aggregated'
+elif therun == 'agghist0':
+    histclim = None
+    actual = 'interpolated_mortality_all_ages-histclim-aggregated'
+elif therun == 'aggcost1':
+    histclim = None
+    actual = 'interpolated_mortality_all_ages-costs-aggregated-costs_lb'
+elif therun == 'aggcost2':
+    histclim = None
+    actual = 'interpolated_mortality_all_ages-costs-aggregated-costs_ub'
+elif therun == 'noafull':
+    histclim = 'interpolated_mortality_all_ages-histclim'
+    actual = 'interpolated_mortality_all_ages'
+elif therun == 'noadumb':
+    histclim = 'interpolated_mortality_all_ages-histclim'
+    actual = 'interpolated_mortality_dumb_all_ages'
+elif therun == 'noafull0':
+    histclim = None
+    actual = 'interpolated_mortality_all_ages'
+elif therun == 'noahist0':
+    histclim = None
+    actual = 'interpolated_mortality_all_ages-histclim'
+else:
+    print "Unknown run!"
+    exit()
+
+if directory[-1] == '/':
+    directory = directory[:-1] # no trailing slash!
 
 allvalues = []
 
@@ -29,25 +68,40 @@ for filename in os.listdir(directory):
     if filename[-(len(actual)+suffixlen):] != actual + suffix:
         continue
 
-    histclimfile = filename[:len(filename)-(len(actual)+suffixlen)] + histclim + suffix
-    if histclimfile not in os.listdir(directory):
-        continue
+    if histclim is not None:
+        histclimfile = filename[:len(filename)-(len(actual)+suffixlen)] + histclim + suffix
+        print histclimfile
+        if histclimfile not in os.listdir(directory):
+            continue
 
     print filename
 
-    years1, actuals = read_single(os.path.join(directory, filename))
-    years2, histclims = read_single(os.path.join(directory, histclimfile))
+    try:
+        years1, actuals = read_single(os.path.join(directory, filename))
+        if histclim is not None:
+            years2, histclims = read_single(os.path.join(directory, histclimfile))
+    except:
+        continue
 
-    print actuals[-5:]
-    print histclims[-5:]
+    print "Actual", actuals[-5:]
+    if histclim is not None:
+        print "HistC.", histclims[-5:]
 
-    assert np.array_equal(years1, years2)
-    allvalues.append(actuals - histclims)
+        if not np.array_equal(years1, years2):
+            print "Skipping."
+            continue
+        allvalues.append(actuals - histclims)
+    else:
+        allvalues.append(actuals)
 
 print len(allvalues)
 
 # Construct the quantiles
-with open(directory + '-' + actual + '-diff.csv', 'w') as fp:
+if histclim is None:
+    filename = directory + '-' + actual + '-nodi.csv'
+else:
+    filename = directory + '-' + actual + '-diff.csv'
+with open(filename, 'w') as fp:
     writer = csv.writer(fp)
     writer.writerow(['year', 'median'])
     for ii in range(len(allvalues[0])):
