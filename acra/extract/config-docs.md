@@ -8,6 +8,11 @@ named `batch-0`, `batch-1`, and so on.  To do a constant p-value run,
 or a single batch from a Monte Carlo run, this directory should end
 with the batch directory itself (and should contain RCP directories).
 
+## `batch_presuffix`
+
+Only used currently for adaptation runs.  When provided, looks for
+results in directories of the form `batch-adapt-[batch_presuffix]-#`.
+
 ## `output-dir`
 
 Directory to write output quantile files

@@ -37,10 +37,14 @@ def iterate_valid_targets(config, impacts, verbose=True):
     checks = config['checks']
     do_rcp_only = config['only-rcp']
     do_realization_only = config['only-realization']
+    batch_presuffix = config.get('batch-presuffix', False)
     suffix = get_suffix(config)
 
     if do_adaptation:
-        batches = map(lambda i: 'batch-adapt-' + str(i), batches)
+        prefix = 'batch-adapt-'
+        if batch_presuffix:
+            prefix += batch_presuffix + '-'
+        batches = map(lambda i: prefix + str(i), batches)
 
     if do_montecarlo:
         iterator = results.iterate_montecarlo(root, batches=batches)

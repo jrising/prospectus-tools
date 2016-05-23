@@ -1,5 +1,5 @@
 # Directory containing the impacts results tree
-results-root: /shares/gcp/outputs/impacts/adaptation/national-adapt
+results-root: /home/jrising/impacts/
 # Directory to write output quantile files
 output-dir: bynational-adapt
 
@@ -20,10 +20,10 @@ do-yearsetmeans: no
 only-rcp: null # e.g., rcp85
 only-realization: null # e.g., 001
 # Which impacts should be included?  List or all
-only-impacts: [health-mortality, yields-maize, yields-maize-noco2]
+only-impacts: [health-mortality, yields-maize, yields-maize-noco2, yields-maize-gddkdd, yields-maize-gddkdd-noco2]
 
 # Which column to read from the files (starting from 2, the final result)
-column: 2
+column: 3
 
 # Include results without a full set of models?
 # Specify the least models to allow, or 0 to require all

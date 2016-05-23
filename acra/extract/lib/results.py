@@ -43,7 +43,7 @@ def iterate(root):
     iterate_montecarlo(root)
     iterate_byp(root)
 
-def iterate_montecarlo(root, batches=None):
+def iterate_montecarlo(root, batches=None, presuffix=False):
     if batches == 'truehist':
         batches = os.listdir(root)
 

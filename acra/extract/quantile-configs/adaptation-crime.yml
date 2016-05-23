@@ -23,7 +23,7 @@ only-realization: null # e.g., 001
 only-impacts: [crime-property, crime-violent]
 
 # Which column to read from the files (starting from 2, the final result)
-column: 2
+column: 3
 
 # Include results without a full set of models?
 # Specify the least models to allow, or 0 to require all
