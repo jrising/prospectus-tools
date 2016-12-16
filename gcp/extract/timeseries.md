@@ -13,12 +13,14 @@ REGION is any region specified in those files: global, an ISO3 country, or a FUN
 
 So, for example, to generate all of the timeseries needed for the global aggregation, I do:
 
+```
 python byrcpssp.py configs/timeseries.yml interpolated_mortality_all_ages-histclim-aggregated global
 python byrcpssp.py configs/timeseries.yml interpolated_mortality_all_ages-aggregated global
 python byrcpssp.py configs/timeseries.yml interpolated_mortality_dumb_all_ages-aggregated global
 python byrcpssp.py configs/timeseries.yml interpolated_mortality_comatose_all_ages-aggregated global
 python byrcpssp.py configs/timeseries.yml interpolated_mortality_all_ages-costs-aggregated global costs_lb
 python byrcpssp.py configs/timeseries.yml interpolated_mortality_all_ages-costs-aggregated global costs_ub
+```
 
 3. Generate the various median across kinds of results
 
@@ -34,8 +36,10 @@ Where COLLECTED-FILES-DIRECTORY is the full path to one of the directories gener
 
 So, to generate the global costs timeseries data, I do:
 
+```
 python quantilebyrcpssp.py /shares/gcp/outputs/timeseries/rcp85-SSP3-global/ aggfull
 python quantilebyrcpssp.py /shares/gcp/outputs/timeseries/rcp85-SSP3-global/ aggdumb
 python quantilebyrcpssp.py /shares/gcp/outputs/timeseries/rcp85-SSP3-global/ aggcoma
 python quantilebyrcpssp.py /shares/gcp/outputs/timeseries/rcp85-SSP3-global/ aggcost1
 python quantilebyrcpssp.py /shares/gcp/outputs/timeseries/rcp85-SSP3-global/ aggcost2
+```
