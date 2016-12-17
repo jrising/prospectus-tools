@@ -1,5 +1,5 @@
 # Directory containing the impacts results tree
-results-root: /shares/gcp/outputs/impacts/adaptation/national-adapt-crime
+results-root: /mnt/norgay_gcp/outputs/impacts/adaptation/national-adapt-crime
 # Directory to write output quantile files
 output-dir: quantiles
 
