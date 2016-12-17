@@ -13,6 +13,8 @@ python byrcpssp.py configs/timeseries.yml BASE-FILENAME REGION
 - `BASE-FILENAME` is the filename part of files in each of the individual result directories.  For example, if you want to extract data from all files called "global_interaction_best.nc4", use `global_interaction_best`.
 - `REGION` is any region specified in those files.  In an unaggregated file, this must be the name of an impact region.  In an aggregated file, it may be `global`, an ISO3 country, or a FUND region specified in the form FUND-XXX.  To get a full list of the region names available in a given file, type `ncdump -v regions FILEPATH`.
 
+The script produces new directories under the `output-dir` specified in the config yml file, with the RCP and SSP, and containing a file for each extracted timeseries.
+
 So, for example, to generate all of the timeseries needed for the global aggregation, I do:
 
 ```
@@ -37,6 +39,8 @@ Where `COLLECTED-FILES-DIRECTORY` is the full path to one of the directories gen
  - The full adaptation result (subtracting histclim) might use `IMPACT-aggregated IMPACT-histclim-aggregated`.
  - Dumb or comatose farmers results might use `IMPACT-dumb-aggregated IMPACT-histclim-aggregated`.
  - To get lower and upper bounds on the costs, you could use `IMPACT-aggregated-costs_lb` (with no `HISTORICAL-SUFFIX`).
+
+This script produces files in the directory above the result directories produced by `byrcpssp.py`.
 
 So, to generate the global costs timeseries data, I do:
 
