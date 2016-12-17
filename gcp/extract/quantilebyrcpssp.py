@@ -2,44 +2,8 @@ import os, sys, csv
 import numpy as np
 
 directory = sys.argv[1]
-therun = sys.argv[2]
-
-if therun == 'aggfull':
-    histclim = 'interpolated_mortality_all_ages-histclim-aggregated'
-    actual = 'interpolated_mortality_all_ages-aggregated'
-elif therun == 'aggdumb':
-    histclim = 'interpolated_mortality_all_ages-histclim-aggregated'
-    actual = 'interpolated_mortality_dumb_all_ages-aggregated'
-elif therun == 'aggcoma':
-    histclim = 'interpolated_mortality_all_ages-histclim-aggregated'
-    actual = 'interpolated_mortality_comatose_all_ages-aggregated'
-elif therun == 'aggfull0':
-    histclim = None
-    actual = 'interpolated_mortality_all_ages-aggregated'
-elif therun == 'agghist0':
-    histclim = None
-    actual = 'interpolated_mortality_all_ages-histclim-aggregated'
-elif therun == 'aggcost1':
-    histclim = None
-    actual = 'interpolated_mortality_all_ages-costs-aggregated-costs_lb'
-elif therun == 'aggcost2':
-    histclim = None
-    actual = 'interpolated_mortality_all_ages-costs-aggregated-costs_ub'
-elif therun == 'noafull':
-    histclim = 'interpolated_mortality_all_ages-histclim'
-    actual = 'interpolated_mortality_all_ages'
-elif therun == 'noadumb':
-    histclim = 'interpolated_mortality_all_ages-histclim'
-    actual = 'interpolated_mortality_dumb_all_ages'
-elif therun == 'noafull0':
-    histclim = None
-    actual = 'interpolated_mortality_all_ages'
-elif therun == 'noahist0':
-    histclim = None
-    actual = 'interpolated_mortality_all_ages-histclim'
-else:
-    print "Unknown run!"
-    exit()
+actual = sys.argv[2]
+histclim = sys.argv[3] if len(sys.argv) > 3 else None
 
 if directory[-1] == '/':
     directory = directory[:-1] # no trailing slash!
