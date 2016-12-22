@@ -1,137 +1,101 @@
+"""
+Usage: `python quantiles.py CONFIG <->BASENAME...
+
+Supported configuration options:
+- column (default: `rebased`)
+- yearsets (default: `no`)
+- years (default: `null`)
+- regions (default: `null`)
+- result-root
+- output-dir
+- do-montecarlo
+- only-rcp
+- only-models (default: `all`)
+- file-organize (default: rcp, ssp)
+- do-gcmweights (default: false)
+- evalqvals (default: [.17, .5, .83])
+"""
+
 import os, sys
 import numpy as np
 import yaml
 
-from lib import results, bundles, weights, impacts, configs
+from lib import results, bundles, weights, configs
 
 config = configs.read_default_config()
 
-outdir = config['output-dir']
-
-do_yearsets = config['do-yearsets']
-do_yearsetmeans = config['do-yearsetmeans']
 do_gcmweights = config.get('do-gcmweights', True)
+evalqvals = config.get('evalqvals', [.17, .5, .83])
 
-allimpacts = config.get('only-impacts', None)
-if allimpacts is None:
-    # Look for all impacts
-    for (batch, rcp, model, realization, pvals, targetdir) in configs.iterate_valid_targets(config, [impact]):
-        TODO
-
-column = config['column']
-
-evalpvals = list(np.linspace(.01, .99, 99))
-
-if do_yearsets:
-    yearses = [(2020, 2039), (2040, 2059), (2080, 2099)]
-else:
-    years = range(2000, 2100)
-
-if do_yearsetmeans:
-    combine_years = np.mean
-else:
-    combine_years = lambda x: x
-
-if not os.path.exists(outdir):
-    os.mkdir(outdir)
-
-for impact in allimpacts:
-    print impact
-
-    # Collect all available results
-    data = {} # { rcp-year0 => { region => { batch-realization => { model => value } } } }
-
-    for (batch, rcp, model, realization, pvals, targetdir) in configs.iterate_valid_targets(config, [impact]):
-        print targetdir
-
-        collection = batch + '-' + realization
-
-        # Extract the values
-        for region, fp in bundles.iterate_bundle(targetdir, impact, suffix, working_suffix):
-            if do_yearsets:
-                values = bundles.get_yearses(fp, yearses)
-            else:
-                values = bundles.get_years(fp, years, column=column)
-
-            if not values:
-                continue
-
-            if do_yearsets:
-                dists = [rcp + '-' + str(years[0]) for years in yearses]
-            else:
-                dists = [rcp + '-' + str(year) for year in years]
-
-            for ii in range(len(dists)):
-                if ii < len(values) and values[ii] is not None:
-                    impacts.collect_in_dictionaries(data, combine_years(values[ii]), dists[ii], region, collection, model)
-
-    if batches == 'truehist':
-        rcps = ['truehist']
+basenames = []
+transforms = []
+for basename in sys.argv[2:]:
+    if basename[0] == '-':
+        basenames.append(basename[1:])
+        transforms.append(lambda x: -x)
     else:
-        rcps = results.rcps
+        basenames.append(basename)
+        transforms.append(lambda x: x)
 
-    # Combine across all batch-realizations that have all models
-    for rcp in rcps:
-        model_weights = weights.get_weights(rcp)
+# Collect all available results
+data = {} # { filestuff => { rowstuff => { batch-gcm-iam => value } } }
 
-        if do_yearsets:
-            dists = [rcp + '-' + str(years[0]) for years in yearses]
-        else:
-            dists = [rcp + '-' + str(year) for year in years]
+for batch, rcp, gcm, iam, ssp, targetdir in configs.iterate_valid_targets(config, basenames):
+    print targetdir
 
-        for dist in dists:
-            if dist not in data:
+    # Ensure that all basenames are accounted for
+    foundall = True
+    for basename in basenames:
+        if basename + '.nc4' not in os.listdir(targetdir):
+            foundall = False
+            break
+    if not foundall:
+        continue
+    
+    # Extract the values
+    for ii in range(len(basenames)):
+        for region, years, values in bundles.iterate_regions(os.path.join(targetdir, basenames[ii] + '.nc4'), config):
+            for year, value in iterate_values(years, values, config):
+                value = transforms[ii](value)
+                filestuff, rowstuff in configs.csv_organize(rcp, spp, region, year, config)
+                if ii == 0:
+                    results.collect_in_dictionaries(data, value, filestuff, rowstuff, (batch, gcm, iam))
+                else:
+                    data[filestuff][rowstuff][(batch, gcm, iam)] += value
+
+for filestuff in data:
+    with open(configs.csv_makepath(filestuff, config), 'w') as fp:
+        writer = csv.writer(csvfp, quoting=csv.QUOTE_MINIMAL)
+
+        if output_format == 'edfcsv':
+            writer.writerow(configs.csv_rownames(config) + map(lambda q: 'q' + str(q * 100), evalqvals))
+        elif output_format == 'valuescsv':
+            writer.writerow(configs.csv_rownames(config) + ['batch', 'gcm', 'iam', 'value', 'weight'])
+
+        for rowstuff in data[filestuff]:
+            model_weights = weights.get_weights(configs.csv_organized_rcp(filestuff, rowstuff, config))
+
+            allvalues = []
+            allweights = []
+
+            for batch, gcm, iam in data[filestuff][rowstuff]:
+                value = data[filestuff][rowstuff][(batch, gcm, iam)]
+                if do_gcmweights:
+                    weight = model_weights[gcm]
+                else:
+                    weight = 1
+                    
+                allvalues.append(value)
+                allweights.append(weight)
+
+            print filestuff, rowstuff, len(allvalues)
+            if len(allvalues) == 0:
                 continue
 
-            with open(os.path.join(outdir, impact + '-' + dist + '.csv'), 'w') as csvfp:
-                writer = csv.writer(csvfp, quoting=csv.QUOTE_MINIMAL)
-                if output_format == 'edfcsv':
-                    writer.writerow(['region'] + map(lambda q: 'q' + str(q), evalpvals))
-                elif output_format == 'valuescsv':
-                    writer.writerow(['region', 'collection', 'model', 'value', 'weight'])
+            if output_format == 'edfcsv':
+                distribution = weights.WeightedECDF(allvalues, allweights)
+                writer.writerow(rowstuff + list(distribution.inverse(evalqvals)))
+            elif output_format == 'valuescsv':
+                for ii in range(len(allvalues)):
+                    writer.writerow(rowstuff + allmontevales[ii] + [allvalues[ii], allweights[ii]])
 
-                for region in data[dist].keys():
-
-                    allvalues = []
-                    allweights = []
-                    allmodels = []
-                    allcollections = []
-
-                    for collection in data[dist][region]:
-                        if not do_gcmweights and allow_partial == 0:
-                            print "Warning: Not using GCM weights, but still using the number of GCM weighted models for limiting batches.  Set allow-partial > 0 to remove warning."
-                            allow_partial = len(model_weights)
-                        if len(data[dist][region][collection]) >= (allow_partial if allow_partial > 0 else len(model_weights)):
-                            if do_gcmweights:
-                                (values, valueweights) = weights.weighted_values(data[dist][region][collection], model_weights)
-                                if len(values) == 0:
-                                    print "Cannot find any values for weighted models."
-                                    continue
-                                if isinstance(values[0], list):
-                                    for ii in range(len(values)):
-                                        allvalues += values[ii]
-                                        allweights += [valueweights[ii]] * len(values[ii])
-                                        allmodels += ['unimplemented-case'] * len(values[ii])
-                                        allcollections += [collection] * len(values[ii])
-                                else:
-                                    allvalues += values
-                                    allweights += valueweights
-                                    allmodels += data[dist][region][collection].keys()
-                                    allcollections += [collection] * len(values)
-                            else:
-                                allvalues += data[dist][region][collection].values()
-                                allweights += [1.] * len(data[dist][region][collection])
-                                allmodels += data[dist][region][collection].keys()
-                                allcollections += [collection] * len(data[dist][region][collection])
-
-                    print dist, region, len(allvalues)
-                    if len(allvalues) == 0:
-                        continue
-
-                    if output_format == 'edfcsv':
-                        distribution = weights.WeightedECDF(allvalues, allweights)
-
-                        writer.writerow([region] + list(distribution.inverse(evalpvals)))
-                    elif output_format == 'valuescsv':
-                        for ii in range(len(allvalues)):
-                            writer.writerow([region, allcollections[ii], allmodels[ii], allvalues[ii], allweights[ii]])
