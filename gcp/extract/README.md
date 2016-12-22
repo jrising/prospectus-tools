@@ -62,6 +62,9 @@ country, or a FUND region specified in the form FUND-XXX.  To get a
 full list of the region names available in a given file, type `ncdump
 -v regions FILEPATH`.
 
+The script produces new directories under the `output-dir` specified
+in the config yml file.  The division across files is specified by the `file-organize` configuration option, with RCP and SSP the default.
+
 Use cases:
 - Get a quantiles timeseries for a given region.
 
