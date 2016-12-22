@@ -1,35 +1,33 @@
+"""
+Usage: `python single.py OPTIONS FILEPATH
+
+Supported configuration options:
+- config (default: none): read the options from a config file
+- column (default: `rebased`)
+- yearsets (default: `no`)
+- year or years (default: `null`)
+- region or regions (default: `null`)
+"""
+
 import sys
 from netCDF4 import Dataset
 
-from lib import bundles
+from lib import bundles, configs
 
-if len(sys.argv) > 3:
-    column = sys.argv[3]
-else:
-    column = 'rebased'
+config, argv = configs.consume_config()
 
-reader = Dataset(sys.argv[1], 'r', format='NETCDF4')
+years, regions, data = bundle.read(argv[0], config.get('column', 'rebased'))
 
-regions = reader.variables['regions'][:]
-years = reader.variables['year'][:]
+writer = csv.writer(sys.stdout)
+writer.writerow(['region', 'year', 'value'])
 
-if len(sys.argv) < 3:
-    print "Please provide a region:"
-    print filter(lambda region: region[:3] == 'USA', regions)
-    exit()
+for region in configs.get_regions(config, regions):
+    if region == 'global':
+        region = ''
+    try:
+        ii = int(region)
+    except:
+        ii = regions.tolist().index(region)
 
-region = sys.argv[2]
-if region == 'global':
-    region = ''
-try:
-    ii = int(region)
-except:
-    ii = regions.tolist().index(region)
-    #print "Region #", ii
-
-data = reader.variables[column][:, ii]
-
-print "year,value"
-
-for jj in range(len(years)):
-    print str(years[jj]) + ',' + str(data[jj])
+    for year, value in iterate_values(years, data[:, ii], config):
+        writer.writerow([region, year, value])

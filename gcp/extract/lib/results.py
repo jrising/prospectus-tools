@@ -52,3 +52,11 @@ def recurse_directories(root, levels):
 def iterate_batch(root, batch):
     for alldirs in recurse_directories(os.path.join(root, batch), 4):
         yield [batch] + alldirs
+
+def collect_in_dictionaries(data, datum, *keys):
+    for key in keys[:-1]:
+        if key not in data:
+            data[key] = {}
+        data = data[key]
+
+    data[keys[-1]] = datum

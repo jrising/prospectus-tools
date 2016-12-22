@@ -20,89 +20,41 @@ __version__ = "$Revision$"
 
 import os, csv
 
-def get_yearses(fp, yearses):
-    TODO
+def read(filepath, column='rebased'):
+    rootgrp = Dataset(filepath, 'r', format='NETCDF4')
+
+    years = rootgrp.variables['years'][:]
+    regions = rootgrp.variables['regions'][:]
+    data = rootgrp.variables[column][:, :]
+
+    rootgrp.close()
+    
+    return years, regions, data
+
+def iterate_regions(filepath, config={}):
     """
-    if yearses[0][0] < 1000:
-        # Just heads and tails
-        reader = csv.reader(fp)
-        reader.next()
-        values = [float(row[1]) for row in reader]
-
-        results = []
-        for years in yearses:
-            if years[0] > 0:
-                results.append(values[years[0]:years[1]])
-            elif years[1] == 0:
-                results.append(values[years[0]:])
-            else:
-                results.append(values[years[0]:years[1]])
-
-        return results
-
-    results = []
-    reader = csv.reader(fp)
-
-    yearses_ii = 0
-    found = False
-    values = []
-    for row in reader:
-        if not found:
-            try:
-                if int(row[0]) >= yearses[yearses_ii][0]:
-                    found = True
-            except:
-                pass
-
-        if found:
-            if row[1] != 'NA':
-                values.append(float(row[1]))
-            if int(row[0]) == yearses[yearses_ii][1]:
-                found = False
-                results.append(values)
-                values = []
-                yearses_ii += 1
-
-    if found:
-        results.append(values)
-
-    return results
-"""
-
-def get_years(fp, years, column=2):
-    TODO
+    Config options: column
     """
-    results = []
-    reader = csv.reader(fp)
-    reader.next()
+    
+    years, regions, data = read(filepath, config.get('column', 'rebased'))
 
-    years_ii = 0
-    for row in reader:
-        while years_ii < len(years) and int(row[0]) > years[years_ii]:
-            results.append(None)
-            years_ii += 1
-
-        if years_ii == len(years):
-            break
-
-        if int(row[0]) == years[years_ii]:
-            if row[column-1] != 'NA':
-                results.append(float(row[column-1]))
-            else:
-                results.append(None)
-            years_ii += 1
-        else:
-            results.append(None) # row[0] < year
-
-    return results
-"""
-
-def iterate_bundle(targetdir, filename, column='debased'):
-    reader = Dataset(os.path.join(targetdir, filename), 'r', format='NETCDF4')
-
-    regions = reader.variables['regions'][:]
-    years = reader.variables['years'][:]
-
-    for ii in range(len(regions)):
+    for region in get_regions(config, regions):
+        ii = regions.index(region)
         yield regions[ii], years, reader.variables[column][:, ii]
 
+def iterate_values(years, values, config={}):
+    """
+    Config options: yearsets, years
+    """
+    
+    if 'yearsets' in config and config['yearsets']:
+        yearsets = config['yearsets']
+        if yearsets == True:
+            yearsets = [(2000, 2019), (2020, 2039), (2040, 2059), (2080, 2099)]
+            
+        for yearset in yearsets:
+            yield "%d-%d" % yearset, np.mean(values[years >= yearset[0] and years < yearset[1]])
+        return
+
+    for year in configs.get_years(config, years):
+        yield years, values[years == year]

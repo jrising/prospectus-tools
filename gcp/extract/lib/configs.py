@@ -6,12 +6,23 @@ import results
 
 checks = None
 
-def read_default_config():
-    if len(sys.argv) < 2:
-        print "Specify the configuration file on the command-line."
-        exit()
+def consume_config():
+    argv = []
+    config = {}
+    for arg in sys.argv[1:]:
+        if arg[0:2] == '--':
+            if '=' in arg:
+                chunks = arg.split('=')
+                if chunks[0] == 'config':
+                    read_config(chunks[1])
+                else:
+                    config[chunks[0]] = yaml.load(chunks[1])
+            else:
+                config[arg] = True
+        else:
+            argv.append(arg)
 
-    return read_config(sys.argv[1])
+    return config, argv
 
 def read_config(filename):
     with open(filename, 'r') as fp:
@@ -56,3 +67,43 @@ def iterate_valid_targets(config, impacts=None, verbose=True):
                 if impact + ".nc4" in os.listdir(targetdir):
                     yield batch, rcp, model, iam, ssp, targetdir
                     break
+
+## Plural handling
+
+def get_regions(config, regions):
+    if 'region' in config:
+        return [config['region']]
+    return config.get('regions', regions)
+
+def get_years(config, years):
+    if 'year' in config:
+        return [config['year']]
+    return config.get('years', years)
+                
+## CSV Creation
+
+def csv_organize(rcp, ssp, region, year, config):
+    values = dict(rcp=rcp, ssp=ssp, region=region, year=year)
+    file_organize = config.get('file-organize', ['rcp', 'ssp'])
+    allkeys = ['rcp', 'ssp', 'region', 'year']
+    return tuple([values[key] for key in file_organize]), tuple([values[key] for key in csv_rownames(config)])
+        
+def csv_makepath(filestuff, config):
+    outdir = config['output-dir']
+    
+    if not os.path.exists(outdir):
+        os.makedirs(outdir)
+
+    return os.path.join(outdir, '-'.join(list(filestuff)) + '.csv')
+
+def csv_rownames(config):
+    allkeys = ['rcp', 'ssp', 'region', 'year']
+    file_organize = config.get('file-organize', ['rcp', 'ssp'])
+    return [key for key in allkeys if key not in file_organize]
+
+def csv_organized_rcp(filestuff, rowstuff, config):
+    file_organize = config.get('file-organize', ['rcp', 'ssp'])
+    if 'rcp' in file_organize:
+        return filestuff[file_organize.index('rcp')]
+
+    return rowstuff[csv_rownames(config).index('rcp')]
