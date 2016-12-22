@@ -12,36 +12,39 @@ aggregated = ['-aggregated', '-levels']
 def count_results(iterator):
     complete = 0
     incomplete = 0
+    toaggregate = 0
     
     for batch, rcp, model, iam, ssp, targetdir in iterator:
-        is_incomplete = False
+        status = None
         for model in models:
             for variation in variations:
                 if not check_doit(True, targetdir, model + variation, ''):
-                    is_incomplete = True
+                    status = 'incomplete'
                     break
                 
                 for aggregate in aggregated:
                     if not os.path.exists(model + variation + aggregate + '.nc4'):
-                        is_incomplete = True
+                        status = 'toaggregate'
                         break
 
-                if is_incomplete:
+                if status is not None:
                     break
-            if is_incomplete:
+            if status is not None:
                 break
 
-        if is_incomplete:
+        if status == 'incomplete':
             incomplete += 1
+        elif status == 'toaggregate':
+            toaggregate += 1
         else:
             complete += 1
 
-    return complete, incomplete
+    return complete, incomplete, toaggregate
 
 print "Monte Carlo:"
-complete, incomplete = results.iterate_montecarlo("/shares/gcp/outputs/labor/impacts-andrena")
-print complete, incomplete
+complete, incomplete, toaggregate = results.iterate_montecarlo("/shares/gcp/outputs/labor/impacts-andrena")
+print complete, incomplete, toaggregate
 
 print "Median"
-complete, incomplete = results.iterate_batch("/shares/gcp/outputs/labor/impacts-andrena", 'median')
-print complete, incomplete
+complete, incomplete, toaggregate = results.iterate_batch("/shares/gcp/outputs/labor/impacts-andrena", 'median')
+print complete, incomplete, toaggregate
