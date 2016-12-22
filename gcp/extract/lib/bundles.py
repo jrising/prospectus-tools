@@ -22,13 +22,18 @@ import os, csv
 import numpy as np
 from netCDF4 import Dataset
 import configs
+from configs import masterregions
 
 def read(filepath, column='rebased'):
+    global masterregions
+
     rootgrp = Dataset(filepath, 'r', format='NETCDF4')
 
     years = rootgrp.variables['year'][:]
     regions = rootgrp.variables['regions'][:]
     data = rootgrp.variables[column][:, :]
+
+    masterregions = regions
 
     rootgrp.close()
     
