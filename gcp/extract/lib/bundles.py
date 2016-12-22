@@ -42,7 +42,7 @@ def iterate_regions(filepath, config={}):
     
     years, regions, data = read(filepath, config.get('column', 'rebased'))
     
-    config['regionorder'] = regions
+    config['regionorder'] = list(regions)
 
     regions = list(regions)
     for region in configs.get_regions(config, regions):
