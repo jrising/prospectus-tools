@@ -9,16 +9,22 @@ checks = None
 def consume_config():
     argv = []
     config = {}
-    for arg in sys.argv[1:]:
+    if sys.argv[1][-4:] == '.yml':
+        config = read_config(sys.argv[1])
+        startii = 2
+    else:
+        startii = 1
+
+    for arg in sys.argv[startii:]:
         if arg[0:2] == '--':
             if '=' in arg:
-                chunks = arg.split('=')
+                chunks = arg[2:].split('=')
                 if chunks[0] == 'config':
-                    read_config(chunks[1])
+                    config = read_config(chunks[1])
                 else:
                     config[chunks[0]] = yaml.load(chunks[1])
             else:
-                config[arg] = True
+                config[arg[2:]] = True
         else:
             argv.append(arg)
 
@@ -40,7 +46,7 @@ def iterate_valid_targets(config, impacts=None, verbose=True):
     if do_montecarlo:
         iterator = results.iterate_montecarlo(root)
     else:
-        iterator = results.iterate_byp(root)
+        iterator = results.iterate_batch(root, 'median')
         # Logic for a given directory
         #if root[-1] == '/':
         #    root = root[0:-1]
@@ -107,3 +113,30 @@ def csv_organized_rcp(filestuff, rowstuff, config):
         return filestuff[file_organize.index('rcp')]
 
     return rowstuff[csv_rownames(config).index('rcp')]
+
+def csv_sorted(rowstuffs, config):
+    file_organize = config.get('file-organize', ['rcp', 'ssp'])
+    if 'year' in file_organize and 'region' in file_organize:
+        return rowstuffs
+
+    names = csv_rownames(config)
+
+    if 'year' not in file_organize and 'region' not in file_organize:
+        yearcol = names.index('year')
+        regioncol = names.index('region')
+        key = lambda rowstuff: (rowstuff[yearcol], rowstuff[regioncol])
+        simplecmp = lambda a, b: -1 if a < b else (0 if a == b else 1)
+        cmp = lambda a, b: regions.index(b[1]) - regions.index(a[1]) if a[0] == b[0] else simplecmp(a[0], b[0])
+    elif 'year' not in file_organize:
+        yearcol = names.index('year')
+        key = lambda rowstuff: rowstuff[yearcol]
+        cmp = None
+    else:
+        regioncol = names.index('region')
+        key = lambda rowstuff: rowstuff[regioncol]
+        cmp = regions.index(b) - regions.index(a)
+
+    if cmp is None:
+        return sorted(rowstuffs, key=key)
+    else:
+        return sorted(rowstuffs, cmp=cmp, key=key)

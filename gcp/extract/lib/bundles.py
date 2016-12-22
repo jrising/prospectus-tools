@@ -19,11 +19,14 @@ __version__ = "$Revision$"
 # $Source$
 
 import os, csv
+import numpy as np
+from netCDF4 import Dataset
+import configs
 
 def read(filepath, column='rebased'):
     rootgrp = Dataset(filepath, 'r', format='NETCDF4')
 
-    years = rootgrp.variables['years'][:]
+    years = rootgrp.variables['year'][:]
     regions = rootgrp.variables['regions'][:]
     data = rootgrp.variables[column][:, :]
 
@@ -37,10 +40,11 @@ def iterate_regions(filepath, config={}):
     """
     
     years, regions, data = read(filepath, config.get('column', 'rebased'))
-
-    for region in get_regions(config, regions):
+    
+    regions = list(regions)
+    for region in configs.get_regions(config, regions):
         ii = regions.index(region)
-        yield regions[ii], years, reader.variables[column][:, ii]
+        yield regions[ii], years, data[:, ii]
 
 def iterate_values(years, values, config={}):
     """
@@ -53,8 +57,9 @@ def iterate_values(years, values, config={}):
             yearsets = [(2000, 2019), (2020, 2039), (2040, 2059), (2080, 2099)]
             
         for yearset in yearsets:
-            yield "%d-%d" % yearset, np.mean(values[years >= yearset[0] and years < yearset[1]])
+            yield "%d-%d" % yearset, np.mean(values[np.logical_and(years >= yearset[0], years < yearset[1])])
         return
 
+    years = list(years)
     for year in configs.get_years(config, years):
-        yield years, values[years == year]
+        yield year, values[years.index(year)]

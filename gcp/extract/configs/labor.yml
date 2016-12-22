@@ -1,7 +1,7 @@
 # Directory containing the impacts results tree
-results-root: /shares/gcp/outputs/mortality/impacts-pharaoh
+results-root: /shares/gcp/outputs/labor/impacts-andrena
 # Directory to write output files
-output-dir: timeseries
+output-dir: results
 
 # Calculate values over the Monte Carlo results?
 do-montecarlo: no
@@ -13,3 +13,6 @@ only-models: all
 
 # Which column to read from the files (the final result is 'rebased')
 column: rebased
+
+# Format for the output
+output-format: edfcsv

@@ -32,14 +32,6 @@ def iterate_montecarlo(root, batches=None):
         for result in iterate_batch(root, subdir):
             yield result
 
-def iterate_byp(root):
-    for subdir in os.listdir(root):
-        if 'median' not in subdir:
-            continue
-
-        for result in iterate_batch(root, subdir):
-            yield result
-
 def recurse_directories(root, levels):
     for subdir in os.listdir(root):
         if levels == 1:

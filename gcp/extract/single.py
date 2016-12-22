@@ -9,14 +9,12 @@ Supported configuration options:
 - region or regions (default: `null`)
 """
 
-import sys
-from netCDF4 import Dataset
-
+import sys, csv
 from lib import bundles, configs
 
 config, argv = configs.consume_config()
 
-years, regions, data = bundle.read(argv[0], config.get('column', 'rebased'))
+years, regions, data = bundles.read(argv[0], config.get('column', 'rebased'))
 
 writer = csv.writer(sys.stdout)
 writer.writerow(['region', 'year', 'value'])
@@ -29,5 +27,5 @@ for region in configs.get_regions(config, regions):
     except:
         ii = regions.tolist().index(region)
 
-    for year, value in iterate_values(years, data[:, ii], config):
+    for year, value in bundles.iterate_values(years, data[:, ii], config):
         writer.writerow([region, year, value])
