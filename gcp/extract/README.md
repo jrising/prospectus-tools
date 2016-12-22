@@ -66,10 +66,10 @@ The script produces new directories under the `output-dir` specified
 in the config yml file.  The division across files is specified by the `file-organize` configuration option, with RCP and SSP the default.
 
 Use cases:
-- Get a quantiles timeseries for a given region.
+- Get a quantiles timeseries for a given region, relative to historical climate
 
-  `python quantiles.py configs/mortality.yml --region=CAN.1.2.28 global_interaction_gmfd`
+  `python quantiles.py configs/labor.yml --region=CAN.1.2.28 labor_global_interaction_best_13dec -labor_global_interaction_best_13dec-histclim`
 
 - Get the quantiles values for all regions over a given year span.
 
-  `python quantiles.py configs/mortality.yml --yearsets=yes global_interaction_gmfd`
+  `python quantiles.py configs/labor.yml --yearsets=yes labor_global_interaction_best_13dec`
