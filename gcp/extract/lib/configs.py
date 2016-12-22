@@ -5,7 +5,6 @@ import yaml
 import results
 
 checks = None
-masterregions = None
 
 def consume_config():
     argv = []
@@ -121,13 +120,14 @@ def csv_sorted(rowstuffs, config):
         return rowstuffs
 
     names = csv_rownames(config)
+    regionorder = config['regionorder']
 
     if 'year' not in file_organize and 'region' not in file_organize:
         yearcol = names.index('year')
         regioncol = names.index('region')
         key = lambda rowstuff: (rowstuff[yearcol], rowstuff[regioncol])
         simplecmp = lambda a, b: -1 if a < b else (0 if a == b else 1)
-        cmp = lambda a, b: masterregions.index(b[1]) - masterregions.index(a[1]) if a[0] == b[0] else simplecmp(a[0], b[0])
+        cmp = lambda a, b: regionorder.index(b[1]) - regionorder.index(a[1]) if a[0] == b[0] else simplecmp(a[0], b[0])
     elif 'year' not in file_organize:
         yearcol = names.index('year')
         key = lambda rowstuff: rowstuff[yearcol]
@@ -135,7 +135,7 @@ def csv_sorted(rowstuffs, config):
     else:
         regioncol = names.index('region')
         key = lambda rowstuff: rowstuff[regioncol]
-        cmp = masterregions.index(b) - masterregions.index(a)
+        cmp = regionorder.index(b) - regionorder.index(a)
 
     if cmp is None:
         return sorted(rowstuffs, key=key)

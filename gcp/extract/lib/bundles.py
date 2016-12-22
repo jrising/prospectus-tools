@@ -22,18 +22,14 @@ import os, csv
 import numpy as np
 from netCDF4 import Dataset
 import configs
-from configs import masterregions
 
 def read(filepath, column='rebased'):
-    global masterregions
 
     rootgrp = Dataset(filepath, 'r', format='NETCDF4')
 
     years = rootgrp.variables['year'][:]
     regions = rootgrp.variables['regions'][:]
     data = rootgrp.variables[column][:, :]
-
-    masterregions = regions
 
     rootgrp.close()
     
@@ -46,6 +42,8 @@ def iterate_regions(filepath, config={}):
     
     years, regions, data = read(filepath, config.get('column', 'rebased'))
     
+    config['regionorder'] = regions
+
     regions = list(regions)
     for region in configs.get_regions(config, regions):
         ii = regions.index(region)
