@@ -85,7 +85,7 @@ def get_years(config, years):
     if 'year' in config:
         return [config['year']]
     return config.get('years', years)
-                
+
 ## CSV Creation
 
 def csv_organize(rcp, ssp, region, year, config):
@@ -93,10 +93,10 @@ def csv_organize(rcp, ssp, region, year, config):
     file_organize = config.get('file-organize', ['rcp', 'ssp'])
     allkeys = ['rcp', 'ssp', 'region', 'year']
     return tuple([values[key] for key in file_organize]), tuple([values[key] for key in csv_rownames(config)])
-        
+
 def csv_makepath(filestuff, config):
     outdir = config['output-dir']
-    
+
     if not os.path.exists(outdir):
         os.makedirs(outdir)
 
@@ -114,6 +114,8 @@ def csv_organized_rcp(filestuff, rowstuff, config):
 
     return rowstuff[csv_rownames(config).index('rcp')]
 
+do_region_sort = False
+
 def csv_sorted(rowstuffs, config):
     file_organize = config.get('file-organize', ['rcp', 'ssp'])
     if 'year' in file_organize and 'region' in file_organize:
@@ -125,9 +127,13 @@ def csv_sorted(rowstuffs, config):
     if 'year' not in file_organize and 'region' not in file_organize:
         yearcol = names.index('year')
         regioncol = names.index('region')
-        key = lambda rowstuff: (rowstuff[yearcol], rowstuff[regioncol])
-        simplecmp = lambda a, b: -1 if a < b else (0 if a == b else 1)
-        cmp = lambda a, b: regionorder.index(b[1]) - regionorder.index(a[1]) if a[0] == b[0] else simplecmp(a[0], b[0])
+        if do_region_sort:
+            key = lambda rowstuff: (rowstuff[yearcol], rowstuff[regioncol])
+            simplecmp = lambda a, b: -1 if a < b else (0 if a == b else 1)
+            cmp = lambda a, b: regionorder.index(b[1]) - regionorder.index(a[1]) if a[0] == b[0] else simplecmp(a[0], b[0])
+        else:
+            key = lambda rowstuff: rowstuff[yearcol]
+            cmp = None
     elif 'year' not in file_organize:
         yearcol = names.index('year')
         key = lambda rowstuff: rowstuff[yearcol]
