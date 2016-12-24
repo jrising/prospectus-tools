@@ -10,6 +10,8 @@ do-montecarlo: no
 only-rcp: null # e.g., rcp85
 # Which GCM models should we include?  List or all
 only-models: all
+# What file(s) should be required
+checks: COMPLETE
 
 # Which column to read from the files (the final result is 'rebased')
 column: rebased

@@ -52,3 +52,15 @@ def collect_in_dictionaries(data, datum, *keys):
         data = data[key]
 
     data[keys[-1]] = datum
+
+def directory_contains(targetdir, oneof):
+    if isinstance(oneof, str):
+        oneof = [oneof]
+
+    files = os.listdir(targetdir)
+
+    for filename in oneof:
+        if filename in files:
+            return True
+
+    return False

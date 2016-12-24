@@ -4,8 +4,6 @@ import sys, os
 import yaml
 import results
 
-checks = None
-
 def consume_config():
     argv = []
     config = {}
@@ -40,6 +38,7 @@ def iterate_valid_targets(config, impacts=None, verbose=True):
 
     do_montecarlo = config['do-montecarlo']
     do_rcp_only = config['only-rcp']
+    checks = config.get('checks', None)
 
     allmodels = config['only-models'] if config.get('only-models', 'all') != 'all' else None
 
