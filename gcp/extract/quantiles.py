@@ -79,6 +79,9 @@ for filestuff in data:
 
             allvalues = []
             allweights = []
+            allbatch = []
+            allgcm = []
+            alliam = []
 
             for batch, gcm, iam in data[filestuff][rowstuff]:
                 value = data[filestuff][rowstuff][(batch, gcm, iam)]
@@ -89,6 +92,9 @@ for filestuff in data:
                     
                 allvalues.append(value)
                 allweights.append(weight)
+                allbatch.append(batch)
+                allgcm.append(gcm)
+                alliam.append(iam)
 
             #print filestuff, rowstuff, allvalues
             if len(allvalues) == 0:
@@ -99,5 +105,5 @@ for filestuff in data:
                 writer.writerow(list(rowstuff) + list(distribution.inverse(evalqvals)))
             elif output_format == 'valuescsv':
                 for ii in range(len(allvalues)):
-                    writer.writerow(list(rowstuff) + allmontevales[ii] + [allvalues[ii], allweights[ii]])
+                    writer.writerow(list(rowstuff) + [allbatch[ii], allgcm[ii], alliam[ii], allvalues[ii], allweights[ii]])
 
