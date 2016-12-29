@@ -64,4 +64,8 @@ class WeightedECDF(StepFunction):
         results = np.array(self.values[useiis], dtype=float)
         results[indexes < 0] = -np.inf
 
+        # Special case with identical weights
+        if .5 in pp and np.all(np.array(self.weights) == self.weights[0]):
+            results[pp.index(.5)] = np.median(self.values)
+
         return results

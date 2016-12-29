@@ -17,6 +17,10 @@ Directory to write output quantile files
 For which unique variables should distinct files be made?  The
 remaining values will be used to identify rows.
 
+## `suffix`
+
+A suffix on the filnames produced.  For example, if a default filename would be `rcp85-SSP3_v9_130325.csv`, then specifying `--suffix=-latest` on the command-line would produce the file `rcp85-SSP3_v9_130325-latest.csv`.
+
 # Top-level configuration
 
 ## `do-montecarlo` (options: yes or no)

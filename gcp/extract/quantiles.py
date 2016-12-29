@@ -69,7 +69,7 @@ for filestuff in data:
         writer = csv.writer(fp, quoting=csv.QUOTE_MINIMAL)
 
         if output_format == 'edfcsv':
-            writer.writerow(configs.csv_rownames(config) + map(lambda q: 'q' + str(q * 100), evalqvals))
+            writer.writerow(configs.csv_rownames(config) + map(lambda q: 'q' + str(int(q * 100)), evalqvals))
         elif output_format == 'valuescsv':
             writer.writerow(configs.csv_rownames(config) + ['batch', 'gcm', 'iam', 'value', 'weight'])
 
@@ -79,6 +79,7 @@ for filestuff in data:
 
             allvalues = []
             allweights = []
+            allmontevales = []
 
             for batch, gcm, iam in data[filestuff][rowstuff]:
                 value = data[filestuff][rowstuff][(batch, gcm, iam)]
@@ -89,6 +90,7 @@ for filestuff in data:
                     
                 allvalues.append(value)
                 allweights.append(weight)
+                allmontevales.append([batch, gcm, iam])
 
             #print filestuff, rowstuff, allvalues
             if len(allvalues) == 0:

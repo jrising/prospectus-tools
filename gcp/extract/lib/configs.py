@@ -99,7 +99,9 @@ def csv_makepath(filestuff, config):
     if not os.path.exists(outdir):
         os.makedirs(outdir)
 
-    return os.path.join(outdir, '-'.join(list(filestuff)) + '.csv')
+    suffix = config.get('suffix', '')
+
+    return os.path.join(outdir, '-'.join(list(filestuff)) + suffix + '.csv')
 
 def csv_rownames(config):
     allkeys = ['rcp', 'ssp', 'region', 'year']

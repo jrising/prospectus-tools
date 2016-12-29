@@ -11,6 +11,7 @@ def count_results(iterator, check_doit):
     sys.stdout = stream = cStringIO.StringIO()
 
     complete = 0
+    missingness = 0
     incomplete = 0
     toaggregate = 0
     failures = {} # {message -> targetdir}
@@ -24,6 +25,10 @@ def count_results(iterator, check_doit):
                         status = 'toaggregate'
                         break
                 else:
+                    if not os.path.exists(os.path.join(targetdir, model + variation + '.nc4')):
+                        status = 'missingness'
+                        continue
+
                     if check_doit(True, targetdir, model + variation, ''):
                         status = 'incomplete'
                         break
@@ -36,12 +41,14 @@ def count_results(iterator, check_doit):
 
                     if variation != '-costs' and not checks.check_result_100years(os.path.join(targetdir, model + variation + aggregate + '.nc4'), regioncount=5665):
                         print "Failed aggregate", os.path.join(targetdir, model + variation + aggregate + '.nc4')
+                        if '-brc' in targetdir or '-osdc' in targetdir:
+                            os.remove(os.path.join(targetdir, model + variation + aggregate + '.nc4'))
                         status = 'toaggregate'
                         break
 
-                if status is not None:
+                if status is not None and status != 'missingness':
                     break
-            if status is not None:
+            if status is not None and status != 'missingness':
                 break
 
         if status == 'incomplete':
@@ -51,11 +58,14 @@ def count_results(iterator, check_doit):
         else:
             with open(os.path.join(targetdir, "COMPLETE"), 'w') as fp:
                 fp.write("2016-12-23")
-            complete += 1
+            if status == 'missingness':
+                missingness += 1
+            else:
+                complete += 1
 
     sys.stdout = stdout_
 
-    return complete, incomplete, toaggregate, stream.getvalue()
+    return complete, missingness, incomplete, toaggregate, stream.getvalue()
 
 models = ['labor_global_interaction_best_13dec']
 variations = ['', '_comatose', '_dumb', '-histclim']
@@ -63,13 +73,15 @@ aggregated = ['-aggregated', '-levels']
 
 print "Labor Monte Carlo:"
 iterator = results.iterate_montecarlo("/shares/gcp/outputs/labor/impacts-andrena")
-complete, incomplete, toaggregate, output1 = count_results(iterator, labor.allmodels.check_doit)
-print complete, incomplete, toaggregate
+complete, missingness, incomplete, toaggregate, output1 = count_results(iterator, lambda redocheck, targetdir, basename, suffix: labor.allmodels.check_doit(redocheck, targetdir, basename, suffix, deletebad=('-brc' in targetdir or '-osdc' in targetdir)))
+print complete, missingness, incomplete, toaggregate
+
+print output1
 
 print "Labor Median:"
 iterator = results.iterate_batch("/shares/gcp/outputs/labor/impacts-andrena", 'median')
-complete, incomplete, toaggregate, output2 = count_results(iterator, labor.allmodels.check_doit)
-print complete, incomplete, toaggregate
+complete, missingness, incomplete, toaggregate, output2 = count_results(iterator, lambda redocheck, targetdir, basename, suffix: labor.allmodels.check_doit(redocheck, targetdir, basename, suffix, deletebad=('-brc' in targetdir or '-osdc' in targetdir)))
+print complete, missingness, incomplete, toaggregate
 
 models = ['global_interaction_best', 'global_interaction_gmfd', 'global_interaction_no_popshare_best', 'global_interaction_no_popshare_gmfd']
 variations = ['', '_comatose', '_dumb', '-histclim', '-costs']
@@ -77,11 +89,11 @@ aggregated = ['-aggregated', '-levels']
 
 print "Mortality Monte Carlo:"
 iterator = results.iterate_montecarlo("/shares/gcp/outputs/mortality/impacts-pharaoh")
-complete, incomplete, toaggregate, output3 = count_results(iterator, mortality.allmodels.check_doit)
-print complete, incomplete, toaggregate
+complete, missingness, incomplete, toaggregate, output3 = count_results(iterator, mortality.allmodels.check_doit)
+print complete, missingness, incomplete, toaggregate
 
 print "Mortality Median:"
 iterator = results.iterate_batch("/shares/gcp/outputs/mortality/impacts-pharaoh", 'median')
-complete, incomplete, toaggregate, output4 = count_results(iterator, mortality.allmodels.check_doit)
-print complete, incomplete, toaggregate
+complete, missingness, incomplete, toaggregate, output4 = count_results(iterator, mortality.allmodels.check_doit)
+print complete, missingness, incomplete, toaggregate
 
