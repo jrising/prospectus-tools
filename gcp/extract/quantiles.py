@@ -55,14 +55,17 @@ for batch, rcp, gcm, iam, ssp, targetdir in configs.iterate_valid_targets(config
     
     # Extract the values
     for ii in range(len(basenames)):
-        for region, years, values in bundles.iterate_regions(os.path.join(targetdir, basenames[ii] + '.nc4'), config):
-            for year, value in bundles.iterate_values(years, values, config):
-                value = transforms[ii](value)
-                filestuff, rowstuff = configs.csv_organize(rcp, ssp, region, year, config)
-                if ii == 0:
-                    results.collect_in_dictionaries(data, value, filestuff, rowstuff, (batch, gcm, iam))
-                else:
-                    data[filestuff][rowstuff][(batch, gcm, iam)] += value
+        try:
+            for region, years, values in bundles.iterate_regions(os.path.join(targetdir, basenames[ii] + '.nc4'), config):
+                for year, value in bundles.iterate_values(years, values, config):
+                    value = transforms[ii](value)
+                    filestuff, rowstuff = configs.csv_organize(rcp, ssp, region, year, config)
+                    if ii == 0:
+                        results.collect_in_dictionaries(data, value, filestuff, rowstuff, (batch, gcm, iam))
+                    else:
+                        data[filestuff][rowstuff][(batch, gcm, iam)] += value
+        except:
+            print "Failed to read " + os.path.join(targetdir, basenames[ii] + '.nc4')
 
 for filestuff in data:
     with open(configs.csv_makepath(filestuff, config), 'w') as fp:
