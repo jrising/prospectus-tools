@@ -37,7 +37,7 @@ def iterate_valid_targets(config, impacts=None, verbose=True):
     root = config['results-root']
 
     do_montecarlo = config['do-montecarlo']
-    do_rcp_only = config['only-rcp']
+    do_rcp_only = config.get('only-rcp', None)
     checks = config.get('checks', None)
 
     allmodels = config['only-models'] if config.get('only-models', 'all') != 'all' else None
@@ -75,10 +75,15 @@ def iterate_valid_targets(config, impacts=None, verbose=True):
 
 ## Plural handling
 
-def get_regions(config, regions):
+def get_regions(config, allregions):
     if 'region' in config:
         return [config['region']]
-    return config.get('regions', regions)
+
+    regions = config.get('regions', allregions)
+    if 'countries' in regions:
+        regions = filter(lambda x: x != 'countries', regions) + filter(lambda x: len(x) == 3, allregions)
+
+    return regions
 
 def get_years(config, years):
     if 'year' in config:
@@ -100,6 +105,7 @@ def csv_makepath(filestuff, config):
         os.makedirs(outdir)
 
     suffix = config.get('suffix', '')
+    suffix = suffix.format(**config)
 
     return os.path.join(outdir, '-'.join(list(filestuff)) + suffix + '.csv')
 

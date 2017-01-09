@@ -71,13 +71,25 @@ models = ['global_interaction_gmfd', 'global_interaction_no_popshare_gmfd'] # 'g
 variations = ['', '_comatose', '_dumb', '-histclim', '-costs']
 aggregated = ['-aggregated', '-levels']
 
-print "Mortality Median:"
+print "Mortality Median 2:"
 iterator = results.iterate_batch("/shares/gcp/outputs/mortality/impacts-pharaoh2", 'median')
 complete, missingness, incomplete, toaggregate, output4 = count_results(iterator, mortality.allmodels.check_doit)
+
+print complete, missingness, incomplete, toaggregate
+
+print "Mortality Monte Carlo 2:"
+iterator = results.iterate_montecarlo("/shares/gcp/outputs/mortality/impacts-pharaoh2")
+complete, missingness, incomplete, toaggregate, output3 = count_results(iterator, mortality.allmodels.check_doit)
+print complete, missingness, incomplete, toaggregate
+
+print "Mortality Median:"
+iterator = results.iterate_batch("/shares/gcp/outputs/mortality/impacts-pharaoh", 'median')
+complete, missingness, incomplete, toaggregate, output4 = count_results(iterator, mortality.allmodels.check_doit)
+
 print complete, missingness, incomplete, toaggregate
 
 print "Mortality Monte Carlo:"
-iterator = results.iterate_montecarlo("/shares/gcp/outputs/mortality/impacts-pharaoh2")
+iterator = results.iterate_montecarlo("/shares/gcp/outputs/mortality/impacts-pharaoh")
 complete, missingness, incomplete, toaggregate, output3 = count_results(iterator, mortality.allmodels.check_doit)
 print complete, missingness, incomplete, toaggregate
 
@@ -89,8 +101,6 @@ print "Labor Monte Carlo:"
 iterator = results.iterate_montecarlo("/shares/gcp/outputs/labor/impacts-andrena")
 complete, missingness, incomplete, toaggregate, output1 = count_results(iterator, lambda redocheck, targetdir, basename, suffix: labor.allmodels.check_doit(redocheck, targetdir, basename, suffix, deletebad=('-brc' in targetdir or '-osdc' in targetdir)))
 print complete, missingness, incomplete, toaggregate
-
-print output1
 
 print "Labor Median:"
 iterator = results.iterate_batch("/shares/gcp/outputs/labor/impacts-andrena", 'median')

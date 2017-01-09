@@ -16,9 +16,8 @@ Supported configuration options:
 - evalqvals (default: [.17, .5, .83])
 """
 
-import os, sys, csv
+import os, sys, csv, traceback, yaml
 import numpy as np
-import yaml
 
 from lib import results, bundles, weights, configs
 
@@ -40,6 +39,8 @@ for basename in argv:
 
 # Collect all available results
 data = {} # { filestuff => { rowstuff => { batch-gcm-iam => value } } }
+
+observations = 0
 
 for batch, rcp, gcm, iam, ssp, targetdir in configs.iterate_valid_targets(config, basenames):
     print targetdir
@@ -64,8 +65,12 @@ for batch, rcp, gcm, iam, ssp, targetdir in configs.iterate_valid_targets(config
                         results.collect_in_dictionaries(data, value, filestuff, rowstuff, (batch, gcm, iam))
                     else:
                         data[filestuff][rowstuff][(batch, gcm, iam)] += value
+                    observations += 1
         except:
             print "Failed to read " + os.path.join(targetdir, basenames[ii] + '.nc4')
+            traceback.print_exc()
+
+print "Observations:", observations
 
 for filestuff in data:
     with open(configs.csv_makepath(filestuff, config), 'w') as fp:

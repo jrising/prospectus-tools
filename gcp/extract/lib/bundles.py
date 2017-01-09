@@ -62,6 +62,8 @@ def iterate_values(years, values, config={}):
             yearsets = [(2000, 2019), (2020, 2039), (2040, 2059), (2080, 2099)]
 
         for yearset in yearsets:
+            if isinstance(yearset, list):
+                yearset = tuple(yearset)
             yield "%d-%d" % yearset, np.mean(values[np.logical_and(years >= yearset[0], years < yearset[1])])
         return
 
