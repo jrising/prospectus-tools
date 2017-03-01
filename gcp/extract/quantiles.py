@@ -29,13 +29,16 @@ output_format = config.get('output-format', 'edfcsv')
 
 basenames = []
 transforms = []
+vectransforms = []
 for basename in argv:
     if basename[0] == '-':
         basenames.append(basename[1:])
         transforms.append(lambda x: -x)
+        vectransforms.append(lambda x: -x)
     else:
         basenames.append(basename)
         transforms.append(lambda x: x)
+        vectransforms.append(lambda x: x)
 
 # Collect all available results
 data = {} # { filestuff => { rowstuff => { batch-gcm-iam => value } } }
@@ -59,7 +62,10 @@ for batch, rcp, gcm, iam, ssp, targetdir in configs.iterate_valid_targets(config
         try:
             for region, years, values in bundles.iterate_regions(os.path.join(targetdir, basenames[ii] + '.nc4'), config):
                 for year, value in bundles.iterate_values(years, values, config):
-                    value = transforms[ii](value)
+                    if region == 'all':
+                        values = vectransforms[ii](values)
+                    else:
+                        value = transforms[ii](value)
                     filestuff, rowstuff = configs.csv_organize(rcp, ssp, region, year, config)
                     if ii == 0:
                         results.collect_in_dictionaries(data, value, filestuff, rowstuff, (batch, gcm, iam))
@@ -73,15 +79,18 @@ for batch, rcp, gcm, iam, ssp, targetdir in configs.iterate_valid_targets(config
 print "Observations:", observations
 
 for filestuff in data:
+    print "Creating file: " + str(filestuff)
     with open(configs.csv_makepath(filestuff, config), 'w') as fp:
         writer = csv.writer(fp, quoting=csv.QUOTE_MINIMAL)
+        rownames = configs.csv_rownames(config)
 
         if output_format == 'edfcsv':
-            writer.writerow(configs.csv_rownames(config) + map(lambda q: 'q' + str(int(q * 100)), evalqvals))
+            writer.writerow(rownames + map(lambda q: 'q' + str(int(q * 100)), evalqvals))
         elif output_format == 'valuescsv':
-            writer.writerow(configs.csv_rownames(config) + ['batch', 'gcm', 'iam', 'value', 'weight'])
+            writer.writerow(rownames + ['batch', 'gcm', 'iam', 'value', 'weight'])
 
         for rowstuff in configs.csv_sorted(data[filestuff].keys(), config):
+            print "Outputing row: " + str(rowstuff)
             if do_gcmweights:
                 model_weights = weights.get_weights(configs.csv_organized_rcp(filestuff, rowstuff, config))
 
@@ -105,8 +114,17 @@ for filestuff in data:
                 continue
 
             if output_format == 'edfcsv':
-                distribution = weights.WeightedECDF(allvalues, allweights)
-                writer.writerow(list(rowstuff) + list(distribution.inverse(evalqvals)))
+                if region == 'all': # still set from before
+                    assert 'all' in rowstuff
+                    allvalues = np.array(allvalues)
+                    for ii in range(allvalues.shape[1]):
+                        distribution = weights.WeightedECDF(allvalues[:, ii], allweights)
+                        myrowstuff = list(rowstuff)
+                        myrowstuff[rownames.index('region')] = config['regionorder'][ii]
+                        writer.writerow(myrowstuff + list(distribution.inverse(evalqvals)))
+                else:
+                    distribution = weights.WeightedECDF(allvalues, allweights)
+                    writer.writerow(list(rowstuff) + list(distribution.inverse(evalqvals)))
             elif output_format == 'valuescsv':
                 for ii in range(len(allvalues)):
                     writer.writerow(list(rowstuff) + allmontevales[ii] + [allvalues[ii], allweights[ii]])
