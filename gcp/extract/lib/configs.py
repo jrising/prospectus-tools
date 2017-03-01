@@ -82,6 +82,8 @@ def get_regions(config, allregions):
     regions = config.get('regions', allregions)
     if 'countries' in regions:
         regions = filter(lambda x: x != 'countries', regions) + filter(lambda x: len(x) == 3, allregions)
+    if 'funds' in regions:
+        regions = filter(lambda x: x != 'funds', regions) + filter(lambda x: x[:5] == 'FUND-', allregions)
 
     return regions
 
