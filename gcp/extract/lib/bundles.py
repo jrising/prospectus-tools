@@ -33,6 +33,12 @@ def read(filepath, column='rebased'):
 
     rootgrp.close()
 
+    # XXX: Correct bad regions in costs
+    if filepath[-10:] == '-costs.nc4' and np.isnan(regions[0]):
+        rootgrp = Dataset(filepath.replace('-costs.nc4', '.nc4'), 'r', format='NETCDF4')
+        regions = rootgrp.variables['regions'][:]
+        rootgrp.close()
+
     return years, regions, data
 
 def iterate_regions(filepath, config={}):
@@ -43,6 +49,10 @@ def iterate_regions(filepath, config={}):
     years, regions, data = read(filepath, config.get('column', 'rebased'))
 
     config['regionorder'] = list(regions)
+
+    if configs.is_allregions(config):
+        yield 'all', years, data
+        return
 
     regions = list(regions)
     for region in configs.get_regions(config, regions):
@@ -64,9 +74,15 @@ def iterate_values(years, values, config={}):
         for yearset in yearsets:
             if isinstance(yearset, list):
                 yearset = tuple(yearset)
-            yield "%d-%d" % yearset, np.mean(values[np.logical_and(years >= yearset[0], years < yearset[1])])
+            if values.ndim == 1:
+                yield "%d-%d" % yearset, np.mean(values[np.logical_and(years >= yearset[0], years < yearset[1])])
+            else: # multiple regions included
+                yield "%d-%d" % yearset, np.mean(values[np.logical_and(years >= yearset[0], years < yearset[1]), :], axis=0)
         return
 
     years = list(years)
     for year in configs.get_years(config, years):
-        yield year, values[years.index(year)]
+        if values.ndim == 1:
+            yield year, values[years.index(year)]
+        else:
+            yield year, values[years.index(year), :]

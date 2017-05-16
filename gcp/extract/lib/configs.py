@@ -75,6 +75,9 @@ def iterate_valid_targets(config, impacts=None, verbose=True):
 
 ## Plural handling
 
+def is_allregions(config):
+    return not ('region' in config or 'regions' in config)
+
 def get_regions(config, allregions):
     if 'region' in config:
         return [config['region']]
@@ -82,6 +85,8 @@ def get_regions(config, allregions):
     regions = config.get('regions', allregions)
     if 'countries' in regions:
         regions = filter(lambda x: x != 'countries', regions) + filter(lambda x: len(x) == 3, allregions)
+    if 'funds' in regions:
+        regions = filter(lambda x: x != 'funds', regions) + filter(lambda x: x[:5] == 'FUND-', allregions)
 
     return regions
 
