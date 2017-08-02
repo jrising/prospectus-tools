@@ -49,6 +49,10 @@ Only extract results for the given regions, if provided
 
 Perform operations for only one RCP or realization?  Set to `null` for all RCPs.
 
+## `only-iam` (options: null, low, high)
+
+Perform operations for only one IAM (high or low)?  Set to `null` for all RCPs.
+
 ## `only-models` (options: all (default), or list
 
 Only include certain climate models in the results.  e.g., `[hadgem2-ao, hadgem2-es]`.

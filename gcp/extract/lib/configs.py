@@ -38,6 +38,7 @@ def iterate_valid_targets(config, impacts=None, verbose=True):
 
     do_montecarlo = config['do-montecarlo']
     do_rcp_only = config.get('only-rcp', None)
+    do_iam_only = config.get('only-iam', None)
     checks = config.get('checks', None)
 
     allmodels = config['only-models'] if config.get('only-models', 'all') != 'all' else None
@@ -59,6 +60,9 @@ def iterate_valid_targets(config, impacts=None, verbose=True):
 
         if do_rcp_only and rcp != do_rcp_only:
             print targetdir, "not", do_rcp_only
+            continue
+        if do_iam_only and iam != do_iam_only:
+            print targetdir, "not", do_iam_only
             continue
         if allmodels is not None and model not in allmodels:
             print targetdir, "not in", allmodels
