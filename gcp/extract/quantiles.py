@@ -44,8 +44,13 @@ for basename in argv:
 data = {} # { filestuff => { rowstuff => { batch-gcm-iam => value } } }
 
 observations = 0
+if config.get('verbose', False):
+    message_on_none = "No valid target directories found"
+else:
+    message_on_none = "No valid target directories found; try --verbose"
 
 for batch, rcp, gcm, iam, ssp, targetdir in configs.iterate_valid_targets(config, basenames):
+    message_on_none = "No valid results sets found within directories."
     print targetdir
 
     # Ensure that all basenames are accounted for
@@ -77,6 +82,8 @@ for batch, rcp, gcm, iam, ssp, targetdir in configs.iterate_valid_targets(config
             traceback.print_exc()
 
 print "Observations:", observations
+if observations == 0:
+    print message_on_none
 
 for filestuff in data:
     print "Creating file: " + str(filestuff)

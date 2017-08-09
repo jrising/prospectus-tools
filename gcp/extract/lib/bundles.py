@@ -46,7 +46,12 @@ def iterate_regions(filepath, config={}):
     Config options: column
     """
 
-    years, regions, data = read(filepath, config.get('column', 'rebased'))
+    if 'column' in config or 'costs' not in filepath:
+        years, regions, data = read(filepath, config.get('column', 'rebased'))
+    else:
+        years, regions, data1 = read(filepath, 'costs_lb')
+        years, regions, data2 = read(filepath, 'costs_ub')
+        data = ((data1 + data2) / 2) / 1e5
 
     config['regionorder'] = list(regions)
 

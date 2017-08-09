@@ -22,6 +22,14 @@ import os, csv
 
 rcps = ['rcp45', 'rcp85']
 
+def iterate_both(root):
+    for subdir in os.listdir(root):
+        if 'batch' not in subdir and 'median' != subdir:
+            continue
+
+        for result in iterate_batch(root, subdir):
+            yield result
+
 def iterate_montecarlo(root, batches=None):
     for subdir in os.listdir(root):
         if 'batch' not in subdir:

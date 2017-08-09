@@ -1,10 +1,12 @@
 import os, sys, cStringIO
 sys.path.append("../extract/lib")
-sys.path.append("../../../../../projects/gcp/impact-calculations")
+sys.path.append("../../../../../research/gcp/impact-calculations")
 
 import results
 from impacts import labor, mortality
 from generate import checks
+
+do_fast = True
 
 def count_results(iterator, check_doit):
     stdout_ = sys.stdout
@@ -29,7 +31,7 @@ def count_results(iterator, check_doit):
                         status = 'missingness'
                         continue
 
-                    if check_doit(True, targetdir, model + variation, ''):
+                    if check_doit(targetdir, model + variation, ''):
                         status = 'incomplete'
                         break
                 
@@ -41,8 +43,7 @@ def count_results(iterator, check_doit):
 
                     if variation != '-costs' and not checks.check_result_100years(os.path.join(targetdir, model + variation + aggregate + '.nc4'), regioncount=5665):
                         print "Failed aggregate", os.path.join(targetdir, model + variation + aggregate + '.nc4')
-                        if '-brc' in targetdir or '-osdc' in targetdir:
-                            os.remove(os.path.join(targetdir, model + variation + aggregate + '.nc4'))
+
                         status = 'toaggregate'
                         break
 
@@ -67,42 +68,34 @@ def count_results(iterator, check_doit):
 
     return complete, missingness, incomplete, toaggregate, stream.getvalue()
 
-models = ['global_interaction_gmfd', 'global_interaction_no_popshare_gmfd'] # 'global_interaction_best', 'global_interaction_no_popshare_best', 
-variations = ['', '_comatose', '_dumb', '-histclim', '-costs']
+if do_fast:
+    checks.do_skip_check = True
+
+print 'C', 'M', 'I', 'A'
+
+models = ['global_interaction_Tmean-POLY-4-AgeSpec-' + cohort for cohort in ['young', 'older', 'oldest', 'combined']]
+variations = ['', '-noadapt', '-incadapt', '-histclim', '-costs']
 aggregated = ['-aggregated', '-levels']
 
-print "Mortality Median 2:"
-iterator = results.iterate_batch("/shares/gcp/outputs/mortality/impacts-pharaoh2", 'median')
+print "4th-order Polynomial Median:"
+iterator = results.iterate_batch("/shares/gcp/outputs/mortality/impacts-harvester", 'median')
 complete, missingness, incomplete, toaggregate, output4 = count_results(iterator, mortality.allmodels.check_doit)
-
 print complete, missingness, incomplete, toaggregate
 
-print "Mortality Monte Carlo 2:"
-iterator = results.iterate_montecarlo("/shares/gcp/outputs/mortality/impacts-pharaoh2")
+print output4
+
+print "4th-order Polynomial Monte Carlo:"
+iterator = results.iterate_montecarlo("/shares/gcp/outputs/mortality/impacts-harvester")
 complete, missingness, incomplete, toaggregate, output3 = count_results(iterator, mortality.allmodels.check_doit)
 print complete, missingness, incomplete, toaggregate
 
-print "Mortality Median:"
-iterator = results.iterate_batch("/shares/gcp/outputs/mortality/impacts-pharaoh", 'median')
-complete, missingness, incomplete, toaggregate, output4 = count_results(iterator, mortality.allmodels.check_doit)
-
-print complete, missingness, incomplete, toaggregate
-
-print "Mortality Monte Carlo:"
-iterator = results.iterate_montecarlo("/shares/gcp/outputs/mortality/impacts-pharaoh")
-complete, missingness, incomplete, toaggregate, output3 = count_results(iterator, mortality.allmodels.check_doit)
-print complete, missingness, incomplete, toaggregate
-
-models = ['labor_global_interaction_best_13dec']
-variations = ['', '_comatose', '_dumb', '-histclim']
+models = ['global_interaction_Tmean-CSpline-LS-AgeSpec-' + cohort for cohort in ['young', 'older', 'oldest', 'combined']]
+variations = ['', '-noadapt', '-incadapt', '-histclim', '-costs']
 aggregated = ['-aggregated', '-levels']
 
-print "Labor Monte Carlo:"
-iterator = results.iterate_montecarlo("/shares/gcp/outputs/labor/impacts-andrena")
-complete, missingness, incomplete, toaggregate, output1 = count_results(iterator, lambda redocheck, targetdir, basename, suffix: labor.allmodels.check_doit(redocheck, targetdir, basename, suffix, deletebad=('-brc' in targetdir or '-osdc' in targetdir)))
+print "Cubic Spline Median:"
+iterator = results.iterate_batch("/shares/gcp/outputs/mortality/impacts-subterran", 'median')
+complete, missingness, incomplete, toaggregate, output2 = count_results(iterator, mortality.allmodels.check_doit)
 print complete, missingness, incomplete, toaggregate
 
-print "Labor Median:"
-iterator = results.iterate_batch("/shares/gcp/outputs/labor/impacts-andrena", 'median')
-complete, missingness, incomplete, toaggregate, output2 = count_results(iterator, lambda redocheck, targetdir, basename, suffix: labor.allmodels.check_doit(redocheck, targetdir, basename, suffix, deletebad=('-brc' in targetdir or '-osdc' in targetdir)))
-print complete, missingness, incomplete, toaggregate
+print output2

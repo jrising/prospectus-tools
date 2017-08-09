@@ -35,6 +35,7 @@ def read_config(filename):
 
 def iterate_valid_targets(config, impacts=None, verbose=True):
     root = config['results-root']
+    verbose = verbose or config.get('verbose', False)
 
     do_montecarlo = config['do-montecarlo']
     do_rcp_only = config.get('only-rcp', None)
@@ -42,7 +43,9 @@ def iterate_valid_targets(config, impacts=None, verbose=True):
 
     allmodels = config['only-models'] if config.get('only-models', 'all') != 'all' else None
 
-    if do_montecarlo:
+    if do_montecarlo == 'both':
+        iterator = results.iterate_both(root)        
+    elif do_montecarlo:
         iterator = results.iterate_montecarlo(root)
     else:
         iterator = results.iterate_batch(root, 'median')
@@ -51,7 +54,11 @@ def iterate_valid_targets(config, impacts=None, verbose=True):
         #    root = root[0:-1]
         #iterator = results.iterate_batch(*os.path.split(root))
 
+    observations = 0
+    message_on_none = "No target directories."
     for batch, rcp, model, iam, ssp, targetdir in iterator:
+        message_on_none = "No valid target directories."
+
         if checks is not None and not results.directory_contains(targetdir, checks):
             if verbose:
                 print targetdir, "missing", checks
@@ -65,13 +72,18 @@ def iterate_valid_targets(config, impacts=None, verbose=True):
             continue
 
         if impacts is None:
+            observations += 1
             yield batch, rcp, model, iam, ssp, targetdir
         else:
             # Check that at least one of the impacts is here
             for impact in impacts:
                 if impact + ".nc4" in os.listdir(targetdir):
+                    observations += 1
                     yield batch, rcp, model, iam, ssp, targetdir
                     break
+
+    if observations == 0:
+        print message_on_none
 
 ## Plural handling
 

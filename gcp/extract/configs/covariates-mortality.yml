@@ -1,5 +1,5 @@
 # Directory containing the impacts results tree
-results-root: /shares/gcp/outputs/mortality/impacts-pharaoh
+results-root: /shares/gcp/outputs/mortality/impacts-dampwood
 # Directory to write output files
 output-dir: covariates
 
