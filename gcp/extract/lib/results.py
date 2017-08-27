@@ -42,6 +42,9 @@ def iterate_montecarlo(root, batches=None):
 
 def recurse_directories(root, levels):
     for subdir in os.listdir(root):
+        if not os.path.isdir(os.path.join(root, subdir)):
+            continue
+
         if levels == 1:
             targetdir = os.path.join(root, subdir)
             yield [subdir, targetdir]
