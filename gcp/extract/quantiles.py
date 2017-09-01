@@ -134,5 +134,5 @@ for filestuff in data:
                     writer.writerow(list(rowstuff) + list(distribution.inverse(evalqvals)))
             elif output_format == 'valuescsv':
                 for ii in range(len(allvalues)):
-                    writer.writerow(list(rowstuff) + allmontevales[ii] + [list(allvalues[ii]), allweights[ii]])
+                    writer.writerow(list(rowstuff) + allmontevales[ii] + [allvalues[ii], allweights[ii]])
 
