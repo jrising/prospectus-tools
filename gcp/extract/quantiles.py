@@ -68,7 +68,7 @@ for batch, rcp, gcm, iam, ssp, targetdir in configs.iterate_valid_targets(config
             for region, years, values in bundles.iterate_regions(os.path.join(targetdir, basenames[ii] + '.nc4'), config):
                 for year, value in bundles.iterate_values(years, values, config):
                     if region == 'all':
-                        values = vectransforms[ii](values)
+                        value = vectransforms[ii](value)
                     else:
                         value = transforms[ii](value)
                     filestuff, rowstuff = configs.csv_organize(rcp, ssp, region, year, config)
