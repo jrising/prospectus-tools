@@ -1,17 +1,18 @@
 setwd("~/research/gcp/prospectus-tools/gcp/scc")
 
 source("damagefunc-lib.R")
+path <- "august/poly5"
 
 library(ggplot2)
 
 allloggdppc <- c()
 alltemps <- c()
 for (rcp in c('rcp45', 'rcp85')) {
-    for (ssp in c('SSP4', 'SSP5')) {
-        if (rcp == 'rcp85' && ssp == 'SSP5')
+    for (ssp in c('SSP4', 'SSP1')) {
+        if (rcp == 'rcp85' && ssp == 'SSP1')
             next # XXX: Nonexistant combination
         print(c(rcp, ssp))
-        damages <- read.csv(paste0("global_damages_", rcp, "_", ssp, ".csv"))
+        damages <- read.csv(paste0(path, "/global_damages_", rcp, "_", ssp, ".csv"))
         for (gcm in unique(damages$gcm)) {
             for (mod in unique(damages$mod)) {
                 subdmg <- damages[damages$gcm == gcm & damages$mod == mod,]
@@ -29,7 +30,11 @@ for (rcp in c('rcp45', 'rcp85')) {
     }
 }
 
-for (damagecol.template in c("damages_deaths_costs_XX_vsl_ag02_popavg", "damages_lifeyears_costs_XX_vly_popavg", "damages_lifeyears_costs_XX_vly_scaled", "damages_deaths_costs_XX_vsl_ag02_scaled")) {
+xxtemplates <- c("damages_deaths_costs_COSTBOUND_vsl_SOURCE_WEIGHTS", "damages_lifeyears_costs_COSTBOUND_vly_SOURCE_WEIGHTS")
+
+costtemplates <- c(xxtemplates, gsub("COSTBOUND", "ub", xxtemplates), gsub("COSTBOUND", "lb", xxtemplates))
+fulltemplates <- c(gsub("SOURCE_WEIGHTS", "ag02_scaled", costtemplates), gsub("SOURCE_WEIGHTS", "ag02_popavg", costtemplates), gsub("SOURCE_WEIGHTS", "epa_scaled", costtemplates), gsub("SOURCE_WEIGHTS", "epa_popavg", costtemplates))
+for (damagecol.template in fulltemplates) {
     load(paste0(damagecol.template, '-fit.RData'))
 
     temps <- seq(0, max(temps), length.out=100)
@@ -46,7 +51,6 @@ for (damagecol.template in c("damages_deaths_costs_XX_vsl_ag02_popavg", "damages
                                    ymax=c(quantile(weather.base, probs=.975), quantile(climate.base, probs=.975), quantile(climate.2050, probs=.975))))
     }
 
-    pdf(paste0("graphs/", damagecol.template, "-damagefunc2.pdf"), width=6, height=4)
     ggplot(df, aes(temp, group=group)) +
         geom_line(aes(y=y, colour=group), size=1) +
         geom_ribbon(aes(ymin=ymin, ymax=ymax, fill=group, alpha=group)) +
@@ -63,7 +67,8 @@ for (damagecol.template in c("damages_deaths_costs_XX_vsl_ag02_popavg", "damages
         ylab("Population Average VSL-montetized deaths (% GDP)") +
         theme(legend.position=c(.01, .99), legend.justification=c(0, 1)) +
         scale_y_continuous(labels = scales::percent)
-    dev.off()
+    ggsave(paste0("graphs/", damagecol.template, "-damagefunc2.pdf"), width=6, height=4)
+
 }
 
 library(pracma)

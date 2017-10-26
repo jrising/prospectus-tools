@@ -18,9 +18,20 @@ __status__ = "Production"
 __version__ = "$Revision$"
 # $Source$
 
-import os, csv
+import os, csv, glob
 
 rcps = ['rcp45', 'rcp85']
+
+def iterate_targetdirs(root, targetsubdirs):
+    for targetsubdir in targetsubdirs:
+        if '*' in targetsubdir:
+            matches = glob.glob(os.path.join(root, targetsubdir))
+            matches = [match[len(root) + (0 if root[-1] == '/' else 1):] for match in matches]
+            for result in iterate_targetdirs(root, matches):
+                yield result
+        else:
+            chunks = targetsubdir.split('/')
+            yield chunks + [os.path.join(root, targetsubdir)]
 
 def iterate_montecarlo(root, batches=None):
     for subdir in os.listdir(root):
@@ -44,7 +55,7 @@ def recurse_directories(root, levels):
 def iterate_batch(root, batch):
     for alldirs in recurse_directories(os.path.join(root, batch), 4):
         yield [batch] + alldirs
-
+        
 def collect_in_dictionaries(data, datum, *keys):
     for key in keys[:-1]:
         if key not in data:

@@ -38,11 +38,11 @@ allgdppcs$model[allgdppcs$model == "IIASA GDP"] <- "low"
 
 lgfuns <- list() # 'model-ssp' = function
 for (model in c('low', 'high'))
-    for (ssp in c('SSP4', 'SSP5')) {
+    for (ssp in c('SSP4', 'SSP1')) {
         subag <- allgdppcs[allgdppcs$model == model & allgdppcs$ssp == ssp,]
         fn <- splinefun(subag$year, log(subag$gdppc), method="natural")
         lgfuns[[paste(model, ssp, sep='-')]] <- fn
     }
 
 lgfuns[["SSP4"]] <- function(x) (lgfuns[["low-SSP4"]](x) + lgfuns[["high-SSP4"]](x)) / 2
-lgfuns[["SSP5"]] <- function(x) (lgfuns[["low-SSP5"]](x) + lgfuns[["high-SSP5"]](x)) / 2
+lgfuns[["SSP1"]] <- function(x) (lgfuns[["low-SSP1"]](x) + lgfuns[["high-SSP1"]](x)) / 2

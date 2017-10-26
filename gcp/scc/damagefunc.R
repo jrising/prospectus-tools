@@ -2,21 +2,27 @@ setwd("~/research/gcp/prospectus-tools/gcp/scc")
 
 source("damagefunc-lib.R")
 
+path <- "august/poly5"
+
 results <- data.frame(rcp=c(), ssp=c(), discountrate=c(), monetization=c(), scc=c())
 
 library(pracma)
 
-xxtemplates <- c("damages_deaths_costs_XX_vsl_ag02_popavg", "damages_lifeyears_costs_XX_vly_popavg", "damages_lifeyears_costs_XX_vly_scaled", "damages_deaths_costs_XX_vsl_ag02_scaled", "damages_deaths_costs_XX_vsl_epa_scaled", "damages_deaths_costs_XX_vsl_epa_popavg")
+xxtemplates <- c("damages_deaths_costs_COSTBOUND_vsl_SOURCE_WEIGHTS", "damages_lifeyears_costs_COSTBOUND_vly_SOURCE_WEIGHTS")
 
-for (damagecol.template in c(xxtemplates, gsub("XX", "ub", xxtemplates), gsub("XX", "lb", xxtemplates))) {
+costtemplates <- c(xxtemplates, gsub("COSTBOUND", "ub", xxtemplates), gsub("COSTBOUND", "lb", xxtemplates))
+fulltemplates <- c(gsub("SOURCE_WEIGHTS", "ag02_scaled", costtemplates), gsub("SOURCE_WEIGHTS", "ag02_popavg", costtemplates), gsub("SOURCE_WEIGHTS", "epa_scaled", costtemplates), gsub("SOURCE_WEIGHTS", "epa_popavg", costtemplates))
+for (damagecol.template in fulltemplates) {
 
 yys <- c()
 XXs <- matrix(NA, 0, 5) # T, T^2, D[avgT], D[avgT^2], gdppc
 
 for (rcp in c('rcp45', 'rcp85')) {
-    for (ssp in c('SSP4', 'SSP5')) {
+    for (ssp in c('SSP4', 'SSP1')) {
+        if (rcp == 'rcp85' && ssp == 'SSP1')
+            next
         print(c(rcp, ssp))
-        damages <- read.csv(paste0("global_damages_", rcp, "_", ssp, ".csv"))
+        damages <- read.csv(paste0(path, "/global_damages_", rcp, "_", ssp, ".csv"))
 
         for (gcm in unique(damages$gcm)) {
             for (mod in unique(damages$mod)) {
@@ -37,7 +43,7 @@ for (rcp in c('rcp45', 'rcp85')) {
                                         tail(temps2, nrow(subdmg)),
                                         tail(avgtemps, nrow(subdmg)),
                                         tail(avgtemps2, nrow(subdmg)), loggdppc))
-                yys <- c(yys, (subdmg[, gsub("XX", "lb", damagecol.template)] + subdmg[, gsub("XX", "ub", damagecol.template)]) / 2)
+                yys <- c(yys, (subdmg[, gsub("COSTBOUND", "lb", damagecol.template)] + subdmg[, gsub("COSTBOUND", "ub", damagecol.template)]) / 2)
             }
         }
     }
@@ -145,9 +151,12 @@ tempboost <- function(len) {
 }
 
 for (rcp in c('rcp45', 'rcp85')) {
-    for (ssp in c('SSP4')) {#, 'SSP5')) {
+    for (ssp in c('SSP4', 'SSP1')) {
+        if (rcp == 'rcp85' && ssp == 'SSP1')
+            next
+
         print(c(rcp, ssp))
-        damages <- read.csv(paste0("global_damages_", rcp, "_", ssp, ".csv"))
+        damages <- read.csv(paste0(path, "/global_damages_", rcp, "_", ssp, ".csv"))
 
         temps <- c()
         for (year in 1981:2099)
@@ -175,4 +184,4 @@ write.csv(results, "damagefunc-scc.csv", row.names=F)
 library(reshape2)
 library(xtable)
 
-xtable(dcast(results, rcp + ssp + monetization ~ discountrate))
+print(xtable(dcast(results, rcp + ssp + monetization ~ discountrate)), include.rownames=F)

@@ -10,7 +10,12 @@ with the batch directory itself (and should contain RCP directories).
 
 ## `output-dir`
 
-Directory to write output quantile files
+Directory to write output quantile files.
+
+## `output-file`
+
+Alternative to `output-dir`, where all results are always written to a
+single file.
 
 ## `file-organize` (subset of rcp, ssp, region, year)
 

@@ -36,14 +36,17 @@ def read_config(filename):
 def iterate_valid_targets(config, impacts=None, verbose=True):
     root = config['results-root']
 
-    do_montecarlo = config['do-montecarlo']
+    do_montecarlo = config.get('do-montecarlo', False)
     do_rcp_only = config.get('only-rcp', None)
     do_iam_only = config.get('only-iam', None)
+    do_targetsubdirs = config.get('targetsubdirs', None)
     checks = config.get('checks', None)
 
     allmodels = config['only-models'] if config.get('only-models', 'all') != 'all' else None
 
-    if do_montecarlo:
+    if do_targetdirs:
+        iterator = results.iterate_targetdirs(root, do_targetsubdirs)
+    elif do_montecarlo:
         iterator = results.iterate_montecarlo(root)
     else:
         iterator = results.iterate_batch(root, 'median')
@@ -105,9 +108,16 @@ def csv_organize(rcp, ssp, region, year, config):
     values = dict(rcp=rcp, ssp=ssp, region=region, year=year)
     file_organize = config.get('file-organize', ['rcp', 'ssp'])
     allkeys = ['rcp', 'ssp', 'region', 'year']
-    return tuple([values[key] for key in file_organize]), tuple([values[key] for key in csv_rownames(config)])
+
+    if 'output-file' in config:
+        return (), tuple(allkeys)
+    else:
+        return tuple([values[key] for key in file_organize]), tuple([values[key] for key in csv_rownames(config)])
 
 def csv_makepath(filestuff, config):
+    if 'output-file' in config:
+        return config['output-file']
+    
     outdir = config['output-dir']
 
     if not os.path.exists(outdir):
