@@ -33,6 +33,14 @@ def iterate_targetdirs(root, targetsubdirs):
             chunks = targetsubdir.split('/')
             yield chunks + [os.path.join(root, targetsubdir)]
 
+def iterate_both(root):
+    for subdir in os.listdir(root):
+        if 'batch' not in subdir and 'median' != subdir:
+            continue
+
+        for result in iterate_batch(root, subdir):
+            yield result
+
 def iterate_montecarlo(root, batches=None):
     for subdir in os.listdir(root):
         if 'batch' not in subdir:
@@ -45,6 +53,9 @@ def iterate_montecarlo(root, batches=None):
 
 def recurse_directories(root, levels):
     for subdir in os.listdir(root):
+        if not os.path.isdir(os.path.join(root, subdir)):
+            continue
+
         if levels == 1:
             targetdir = os.path.join(root, subdir)
             yield [subdir, targetdir]

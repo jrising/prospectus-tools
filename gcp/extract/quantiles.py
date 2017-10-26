@@ -44,8 +44,13 @@ for basename in argv:
 data = {} # { filestuff => { rowstuff => { batch-gcm-iam => value } } }
 
 observations = 0
+if config.get('verbose', False):
+    message_on_none = "No valid target directories found"
+else:
+    message_on_none = "No valid target directories found; try --verbose"
 
 for batch, rcp, gcm, iam, ssp, targetdir in configs.iterate_valid_targets(config, basenames):
+    message_on_none = "No valid results sets found within directories."
     print targetdir
 
     # Ensure that all basenames are accounted for
@@ -63,7 +68,7 @@ for batch, rcp, gcm, iam, ssp, targetdir in configs.iterate_valid_targets(config
             for region, years, values in bundles.iterate_regions(os.path.join(targetdir, basenames[ii] + '.nc4'), config):
                 for year, value in bundles.iterate_values(years, values, config):
                     if region == 'all':
-                        values = vectransforms[ii](values)
+                        value = vectransforms[ii](value)
                     else:
                         value = transforms[ii](value)
                     filestuff, rowstuff = configs.csv_organize(rcp, ssp, region, year, config)
@@ -77,6 +82,8 @@ for batch, rcp, gcm, iam, ssp, targetdir in configs.iterate_valid_targets(config
             traceback.print_exc()
 
 print "Observations:", observations
+if observations == 0:
+    print message_on_none
 
 for filestuff in data:
     print "Creating file: " + str(filestuff)
@@ -127,5 +134,5 @@ for filestuff in data:
                     writer.writerow(list(rowstuff) + list(distribution.inverse(evalqvals)))
             elif output_format == 'valuescsv':
                 for ii in range(len(allvalues)):
-                    writer.writerow(list(rowstuff) + allmontevales[ii] + [list(allvalues[ii]), allweights[ii]])
+                    writer.writerow(list(rowstuff) + allmontevales[ii] + [allvalues[ii], allweights[ii]])
 
