@@ -1,11 +1,13 @@
-setwd("~/research/gcp/prospectus-tools/gcp/scc")
-
 library(reshape2)
 library(dplyr)
 
+## The main product of this file is lgfuns, a set of spline functions approximates global GDP per capita
+
 ## Calculate global GDPpc
-gdppc <- read.csv("gdp_per_capita.csv")
-poptot <- read.csv("total_population.csv")
+## Create a table `allgdppcs`, used in the other calculations
+
+gdppc <- read.csv("data/gdp_per_capita.csv")
+poptot <- read.csv("data/total_population.csv")
 
 gdppc2 <- melt(gdppc, id.vars=c('MODEL', 'SCENARIO', 'REGION'))
 gdppc2$year <- as.numeric(substr(gdppc2$variable, 2, 5))
@@ -31,18 +33,21 @@ for (model in unique(combo$MODEL)) {
     }
 }
 
-
 allgdppcs$model <- as.character(allgdppcs$model)
 allgdppcs$model[allgdppcs$model == "OECD Env-Growth"] <- "high"
 allgdppcs$model[allgdppcs$model == "IIASA GDP"] <- "low"
 
-lgfuns <- list() # 'model-ssp' = function
+## Make the spline functions
+
+lgfuns <- list() # 'model-ssp' => function
 for (model in c('low', 'high'))
-    for (ssp in c('SSP4', 'SSP1')) {
+    for (ssp in paste0("SSP", 1:5)) {
         subag <- allgdppcs[allgdppcs$model == model & allgdppcs$ssp == ssp,]
         fn <- splinefun(subag$year, log(subag$gdppc), method="natural")
         lgfuns[[paste(model, ssp, sep='-')]] <- fn
     }
 
-lgfuns[["SSP4"]] <- function(x) (lgfuns[["low-SSP4"]](x) + lgfuns[["high-SSP4"]](x)) / 2
-lgfuns[["SSP1"]] <- function(x) (lgfuns[["low-SSP1"]](x) + lgfuns[["high-SSP1"]](x)) / 2
+for (ssp in paste0("SSP", 1:5)) { # Add also 'ssp' => function
+    lgfuns[[ssp]] <- function(x) (lgfuns[[paste0("low-", ssp)]](x) + lgfuns[[paste0("high-", ssp)]](x)) / 2
+    lgfuns[[ssp]] <- function(x) (lgfuns[[paste0("low-", ssp)]](x) + lgfuns[[paste0("high-", ssp)]](x)) / 2
+}
