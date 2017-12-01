@@ -45,7 +45,7 @@ def iterate_valid_targets(config, impacts=None, verbose=True):
 
     allmodels = config['only-models'] if config.get('only-models', 'all') != 'all' else None
 
-    if do_targetdirs:
+    if do_targetsubdirs:
         iterator = results.iterate_targetdirs(root, do_targetsubdirs)
     elif do_montecarlo == 'both':
         iterator = results.iterate_both(root)        
