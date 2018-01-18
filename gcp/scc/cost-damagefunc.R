@@ -180,7 +180,7 @@ for (rcp in c('rcp45', 'rcp85')) {
 
         temps <- c()
         for (year in 1981:2099)
-            temps <- c(temps, mean(damages$global_tas[damages$year == year]))
+            temps <- c(temps, mean(damages[damages$year == year, tascol]))
         baseline <- sum(temps[1:30] * (30:1) / sum(1:30))
 
         temps <- c(temps, rep(temps[length(temps)] - baseline, 300) * exp(-(0:299) / 400) + baseline)
