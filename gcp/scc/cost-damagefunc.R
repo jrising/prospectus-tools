@@ -1,18 +1,22 @@
 source("damagefunc-lib.R")
 
+### Configuration: Fill in the values below
+
 ## Look for all input files of this form
-filetemplate <- "august/poly5/global_damages_RCP_SSP.csv"
+filetemplate <- "inputs/poly2/global_damages_RCP_SSP.csv"
 ## They must have the following columns:
 ## - year
 ## - gcm: GCM name
 ## - mod: IAM name (high or low)
 ## - <tascol>: The global temperature, using the column name below
 ## - <impcol>: The global impact, using the column name below
-tascol <- "global_tas"
-impcol <- "..."
-initial.temperature <- NA # If NA, rebase temperature
+tascol <- "temp"
+impcol <- "impact"
+initial.temperature <- 18 # If NA, rebase temperature
 temperature.description <- "Temperature change since 1980"
 impact.description <- "Population Average VSL-monetized deaths (% GDP)"
+
+### The code:
 
 library(pracma)
 library(rstan)
@@ -28,7 +32,7 @@ XXs <- matrix(NA, 0, 5) # T, T^2, D[avgT], D[avgT^2], gdppc
 
 for (rcp in c('rcp45', 'rcp85')) {
     for (ssp in paste0('SSP', 1:5)) {
-        filepath <- gsub(gsub(filetemplate, "RCP", rcp), "SSP", ssp)
+        filepath <- gsub("SSP", ssp, gsub("RCP", rcp, filetemplate))
         if (!file.exists(filepath))
             next
 
@@ -40,7 +44,7 @@ for (rcp in c('rcp45', 'rcp85')) {
                 subdmg <- damages[damages$gcm == gcm & damages$mod == mod,]
                 if (nrow(subdmg) == 0)
                     next
-                if (do.rebase.temperature) {
+                if (is.na(initial.temperature)) { # if initial.temperature is NA, rebase temperature
                     baseline <- sum(subdmg[1:30, tascol] * (30:1) / sum(1:30))
                     temps <- c(rep(0, 30), subdmg[, tascol] - baseline)
                 } else
@@ -98,9 +102,9 @@ la <- extract(fit, permute=T)
 
 ## Plot the parameters
 
-ggplot(data.frame(x=c(la$alpha, la$beta1, la$beta2, la$adapt, la$gamma, la$epsilon),
-                  group=rep(c("alpha", "beta1", "beta2", "adapt", "gamma", "sigma"), each=length(la$alpha))),
-       aes(x)) +
+plot <- ggplot(data.frame(x=c(la$alpha, la$beta1, la$beta2, la$adapt, la$gamma, la$epsilon),
+                          group=rep(c("alpha", "beta1", "beta2", "adapt", "gamma", "sigma"), each=length(la$alpha))),
+               aes(x)) +
     facet_wrap( ~ group, scales="free") + geom_density() + xlab("") + ylab("Density") + theme_bw()
 ggsave(paste0("graphs/params.pdf"), width=8, height=6)
 
@@ -171,7 +175,7 @@ results <- data.frame(rcp=c(), ssp=c(), discountrate=c(), scc=c())
 
 for (rcp in c('rcp45', 'rcp85')) {
     for (ssp in paste0('SSP', 1:5)) {
-        filepath <- gsub(gsub(filetemplate, "RCP", rcp), "SSP", ssp)
+        filepath <- gsub("SSP", ssp, gsub("RCP", rcp, filetemplate))
         if (!file.exists(filepath))
             next
 
