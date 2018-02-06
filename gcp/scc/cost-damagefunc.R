@@ -1,11 +1,9 @@
-setwd("~/research/gcp/prospectus-tools/gcp/scc")
-
 source("damagefunc-lib.R")
 
 ### Configuration: Fill in the values below
 
 ## Look for all input files of this form
-filetemplate <- "redamagefunctioncode/global_damages_RCP_SSP.csv"
+filetemplate <- "inputs/poly2/global_damages_RCP_SSP.csv"
 ## They must have the following columns:
 ## - year
 ## - gcm: GCM name
