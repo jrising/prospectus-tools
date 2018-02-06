@@ -1,9 +1,11 @@
+setwd("~/research/gcp/prospectus-tools/gcp/scc")
+
 source("damagefunc-lib.R")
 
 ### Configuration: Fill in the values below
 
 ## Look for all input files of this form
-filetemplate <- "inputs/poly2/global_damages_RCP_SSP.csv"
+filetemplate <- "redamagefunctioncode/global_damages_RCP_SSP.csv"
 ## They must have the following columns:
 ## - year
 ## - gcm: GCM name
@@ -12,9 +14,10 @@ filetemplate <- "inputs/poly2/global_damages_RCP_SSP.csv"
 ## - <impcol>: The global impact, using the column name below
 tascol <- "temp"
 impcol <- "impact"
-initial.temperature <- 18 # If NA, rebase temperature
+initial.temperature <- NA # If NA, rebase temperature
 temperature.description <- "Temperature change since 1980"
 impact.description <- "Population Average VSL-monetized deaths (% GDP)"
+include.climadapt <- F
 
 ### The code:
 
@@ -67,11 +70,16 @@ for (rcp in c('rcp45', 'rcp85')) {
     }
 }
 
-##plot(XXs[, 1], yys)
+ggplot(data.frame(yys, xxs=XXs[, 1], loggdppc=XXs[, 5]), aes(xxs, yys, colour=loggdppc)) +
+    geom_point() + geom_smooth() +
+    theme_minimal() + scale_colour_continuous(name="Log GDP pc") +
+    xlab(temperature.description) + ylab(impact.description)
+ggsave(paste0("graphs/data.pdf"), width=8, height=6)
 
 ## Fit a Bayesian model
 
-stan.model <- "
+if (include.climadapt) {
+    stan.model <- "
 data {
     int<lower=0> I;
     vector[I] T;
@@ -92,6 +100,27 @@ parameters {
 model {
     y ~ normal(alpha + (beta1 * (T - adapt * DavgT) + beta2 * (T2 - adapt * DavgT2)) .* exp(gamma * logGDPpc), epsilon);
 }"
+} else {
+    ## No climate adaptation estimation
+    stan.model <- "
+data {
+    int<lower=0> I;
+    vector[I] DavgT;
+    vector[I] DavgT2;
+    vector[I] logGDPpc;
+    vector[I] y;
+}
+parameters {
+    real alpha;
+    real beta1;
+    real<lower=0, upper=.05> beta2; // strong assumption, but need for convergence
+    real<lower=-3, upper=0> gamma; // assumptions: doubling -> >12.5% of impact
+    real<lower=0> epsilon;
+}
+model {
+    y ~ normal(alpha + (beta1 * DavgT + beta2 * DavgT2) .* exp(gamma * logGDPpc), epsilon);
+}"
+}
 
 inc <- !is.na(yys)
 stan.data <- list(I = sum(inc), T = XXs[inc, 1], T2 = XXs[inc, 2], DavgT = XXs[inc, 3], DavgT2 = XXs[inc, 4], logGDPpc = XXs[inc, 5] - min(XXs[, 5]), y = yys[inc])
@@ -102,52 +131,94 @@ la <- extract(fit, permute=T)
 
 ## Plot the parameters
 
-plot <- ggplot(data.frame(x=c(la$alpha, la$beta1, la$beta2, la$adapt, la$gamma, la$epsilon),
-                          group=rep(c("alpha", "beta1", "beta2", "adapt", "gamma", "sigma"), each=length(la$alpha))),
-               aes(x)) +
-    facet_wrap( ~ group, scales="free") + geom_density() + xlab("") + ylab("Density") + theme_bw()
+if (include.climadapt) {
+    plot <- ggplot(data.frame(x=c(la$alpha, la$beta1, la$beta2, la$adapt, la$gamma, la$epsilon),
+                              group=rep(c("alpha", "beta1", "beta2", "adapt", "gamma", "sigma"), each=length(la$alpha))),
+                   aes(x)) +
+        facet_wrap( ~ group, scales="free") + geom_density() + xlab("") + ylab("Density") + theme_bw()
+} else {
+    plot <- ggplot(data.frame(x=c(la$alpha, la$beta1, la$beta2, la$gamma, la$epsilon),
+                              group=rep(c("alpha", "beta1", "beta2", "gamma", "sigma"), each=length(la$alpha))),
+                   aes(x)) +
+        facet_wrap( ~ group, scales="free") + geom_density() + xlab("") + ylab("Density") + theme_bw()
+}
 ggsave(paste0("graphs/params.pdf"), width=8, height=6)
 
 ## Check that the least-squares optimum isn't far off
 
-objective <- function(params) {
-    alpha <- params[1]
+if (include.climadapt) {
+    objective <- function(params) {
+        alpha <- params[1]
+        beta1 <- params[2]
+        beta2 <- params[3]
+        adapt <- params[4]
+        gamma <- params[5]
+
+        if (adapt < 0)
+            return(Inf)
+
+        yypreds <- alpha + (beta1 * (XXs[, 1] - adapt * XXs[, 3]) + beta2 * (XXs[, 2] - adapt * XXs[, 4])) * exp(gamma * (XXs[, 5] - min(XXs[, 5])))
+        sum((yys - yypreds)^2, na.rm=T)
+    }
+
+    params <- c(mean(la$alpha), mean(la$beta1), mean(la$beta2), mean(la$adapt), mean(la$gamma))
+} else {
+    objective <- function(params) {
+        alpha <- params[1]
+        beta1 <- params[2]
+        beta2 <- params[3]
+        gamma <- params[4]
+
+        yypreds <- alpha + (beta1 * XXs[, 3] + beta2 * XXs[, 4]) * exp(gamma * (XXs[, 5] - min(XXs[, 5])))
+        sum((yys - yypreds)^2, na.rm=T)
+    }
+
+    params <- c(mean(la$alpha), mean(la$beta1), mean(la$beta2), mean(la$gamma))
+}
+
+1 - objective(params) / objective(c(mean(yys, na.rm=T), rep(0, 4)))
+
+if (include.climadapt) {
+    ## Report the damage function now under weather, now under climate, and in 2050
+
     beta1 <- params[2]
     beta2 <- params[3]
     adapt <- params[4]
     gamma <- params[5]
 
-    if (adapt < 0)
-        return(Inf)
+    temps <- seq(0, max(XXs[, 1]), length.out=100)
+    weather.baseline <- (beta1 * temps + beta2 * temps^2)
+    climate.baseline <- (beta1 * (1 - adapt) * temps + beta2 * (1 - adapt) * temps^2)
+    climate.2050 <- (beta1 * (1 - adapt) * temps + beta2 * (1 - adapt) * temps^2) * exp(gamma * (mean(XXs[, 5]) - min(XXs[, 5])))
 
-    yypreds <- alpha + (beta1 * (XXs[, 1] - adapt * XXs[, 3]) + beta2 * (XXs[, 2] - adapt * XXs[, 4])) * exp(gamma * (XXs[, 5] - min(XXs[, 5])))
-    sum((yys - yypreds)^2, na.rm=T)
+    ggplot(data.frame(temp=rep(temps, 3), damage=c(weather.baseline, climate.baseline, climate.2050), group=rep(c('No adaptation', 'Climate adaptation', 'Climate and income adaptation'), each=length(temps))),
+           aes(temp, damage, colour=group)) +
+        geom_line() + geom_hline(yintercept=0) + scale_x_continuous(expand=c(0, 0)) +
+        theme_bw() + scale_colour_discrete(name="") + xlab(temperature.description) +
+        ylab(impact.description) +
+        theme(legend.position=c(.01, .99), legend.justification=c(0, 1)) +
+        scale_y_continuous(labels = scales::percent)
+    ggsave(paste0("graphs/dmgfunc.pdf"), width=6, height=4)
+} else {
+    ## Report the damage function now under climate, and in 2050
+
+    beta1 <- params[2]
+    beta2 <- params[3]
+    gamma <- params[4]
+
+    temps <- seq(0, max(XXs[, 1]), length.out=100)
+    climate.baseline <- (beta1 * temps + beta2 * temps^2)
+    climate.2050 <- (beta1 * temps + beta2 * temps^2) * exp(gamma * (mean(XXs[, 5]) - min(XXs[, 5])))
+
+    ggplot(data.frame(temp=rep(temps, 2), damage=c(climate.baseline, climate.2050), group=rep(c('Climate adaptation', 'Climate and income adaptation'), each=length(temps))),
+           aes(temp, damage, colour=group)) +
+        geom_line() + geom_hline(yintercept=0) + scale_x_continuous(expand=c(0, 0)) +
+        theme_bw() + scale_colour_discrete(name="") + xlab(temperature.description) +
+        ylab(impact.description) +
+        theme(legend.position=c(.01, .99), legend.justification=c(0, 1)) +
+        scale_y_continuous(labels = scales::percent)
+    ggsave(paste0("graphs/dmgfunc.pdf"), width=6, height=4)
 }
-
-params <- c(mean(la$alpha), mean(la$beta1), mean(la$beta2), mean(la$adapt), mean(la$gamma))
-
-1 - objective(params) / objective(c(mean(yys, na.rm=T), rep(0, 4)))
-
-## Report the damage function now under weather, now under climate, and in 2050
-
-beta1 <- params[2]
-beta2 <- params[3]
-adapt <- params[4]
-gamma <- params[5]
-
-temps <- seq(0, max(XXs[, 1]), length.out=100)
-weather.baseline <- (beta1 * temps + beta2 * temps^2)
-climate.baseline <- (beta1 * (1 - adapt) * temps + beta2 * (1 - adapt) * temps^2)
-climate.2050 <- (beta1 * (1 - adapt) * temps + beta2 * (1 - adapt) * temps^2) * exp(gamma * (mean(XXs[, 5]) - min(XXs[, 5])))
-
-ggplot(data.frame(temp=rep(temps, 3), damage=c(weather.baseline, climate.baseline, climate.2050), group=rep(c('Weather baseline', 'Climate baseline', 'Climate under 2050 income'), each=length(temps))),
-       aes(temp, damage, colour=group)) +
-    geom_line() + geom_hline(yintercept=0) + scale_x_continuous(expand=c(0, 0)) +
-    theme_bw() + scale_colour_discrete(name="") + xlab(temperature.description) +
-    ylab(impact.description) +
-    theme(legend.position=c(.01, .99), legend.justification=c(0, 1)) +
-    scale_y_continuous(labels = scales::percent)
-ggsave(paste0("graphs/dmgfunc.pdf"), width=6, height=4)
 
 ## Calculate SCC
 
@@ -155,16 +226,29 @@ ggsave(paste0("graphs/dmgfunc.pdf"), width=6, height=4)
 
 discountrate <- .03
 
-social.costs <- function(temps, avgtemps, lgfun) {
-    costs <- c()
-    for (tt in 2017:2316) {
-        temp <- temps[tt - 1980] - baseline
-        avgtemp <- avgtemps[tt - 1980] - baseline
-        loggdppc <- lgfun(tt)
-        costs <- c(costs, mean((la$beta1 * (temp - la$adapt * avgtemp) + la$beta2 * (temp^2 - la$adapt * avgtemp^2)) * exp(la$gamma * (loggdppc - min(XXs[, 5])))))
-    }
+if (include.climadapt) {
+    social.costs <- function(temps, avgtemps, lgfun) {
+        costs <- c()
+        for (tt in 2017:2316) {
+            temp <- temps[tt - 1980] - baseline
+            avgtemp <- avgtemps[tt - 1980] - baseline
+            loggdppc <- lgfun(tt)
+            costs <- c(costs, mean((la$beta1 * (temp - la$adapt * avgtemp) + la$beta2 * (temp^2 - la$adapt * avgtemp^2)) * exp(la$gamma * (loggdppc - min(XXs[, 5])))))
+        }
 
-    costs
+        costs
+    }
+} else {
+    social.costs <- function(avgtemps, lgfun) {
+        costs <- c()
+        for (tt in 2017:2316) {
+            avgtemp <- avgtemps[tt - 1980] - baseline
+            loggdppc <- lgfun(tt)
+            costs <- c(costs, mean((la$beta1 * avgtemp + la$beta2 * avgtemp^2) * exp(la$gamma * (loggdppc - min(XXs[, 5])))))
+        }
+
+        costs
+    }
 }
 
 tempboost <- function(len) {
@@ -190,8 +274,13 @@ for (rcp in c('rcp45', 'rcp85')) {
         temps <- c(temps, rep(temps[length(temps)] - baseline, 300) * exp(-(0:299) / 400) + baseline)
         avgtemps <- movavg(temps, 30, 'w')
 
-        costs1 <- social.costs(temps, avgtemps, lgfuns[[ssp]])
-        costs2 <- social.costs(temps + tempboost(length(temps)), avgtemps + movavg(tempboost(length(temps)), 30, 'w'), lgfuns[[ssp]])
+        if (include.climadapt) {
+            costs1 <- social.costs(temps, avgtemps, lgfuns[[ssp]])
+            costs2 <- social.costs(temps + tempboost(length(temps)), avgtemps + movavg(tempboost(length(temps)), 30, 'w'), lgfuns[[ssp]])
+        } else {
+            costs1 <- social.costs(avgtemps, lgfuns[[ssp]])
+            costs2 <- social.costs(avgtemps + movavg(tempboost(length(temps)), 30, 'w'), lgfuns[[ssp]])
+        }
 
         for (discountrate in seq(0, .07, by=.01)) {
             scc <- sum((costs2 - costs1) * exp(-(0:299) * discountrate)) * 75.59e12
