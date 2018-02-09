@@ -45,6 +45,12 @@ for (rcp in c('rcp45', 'rcp85')) {
                 subdmg <- damages[damages$gcm == gcm & damages$mod == mod,]
                 if (nrow(subdmg) == 0)
                     next
+                ## Drop any GCMs with exactly 0 temps
+                if (any(subdmg[, tascol] == 0)) {
+                    print(c("Skipping", gcm, subdmg$year[subdmg[, tascol] == 0]))
+                    next
+                }
+
                 if (is.na(initial.temperature)) { # if initial.temperature is NA, rebase temperature
                     baseline <- sum(subdmg[1:30, tascol] * (30:1) / sum(1:30))
                     temps <- c(rep(0, 30), subdmg[, tascol] - baseline)
