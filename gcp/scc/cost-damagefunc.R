@@ -11,7 +11,7 @@ library(xtable)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 
-estimate.scc <- function(filetemplate, prefix, tascol, impcol, initial.temperature, temperature.description, impact.description, include.climadapt=F) {
+estimate.scc <- function(filetemplate, prefix, tascol, impcol, initial.temperature, temperature.description, impact.description, include.climadapt=F, include.intercept=F) {
 
     yys <- c()
     XXs <- matrix(NA, 0, 5) # T, T^2, D[avgT], D[avgT^2], gdppc
@@ -37,7 +37,7 @@ estimate.scc <- function(filetemplate, prefix, tascol, impcol, initial.temperatu
                     }
 
                     if (is.na(initial.temperature)) { # if initial.temperature is NA, rebase temperature
-                        baseline <- sum(subdmg[1:30, tascol] * (30:1) / sum(1:30))
+                        baseline <- mean(subdmg[subdmg$year >= 1996 & subdmg$year <= 2015, tascol], na.rm=T)
                         temps <- c(rep(0, 30), subdmg[, tascol] - baseline)
                     } else
                         temps <- c(rep(initial.temperature, 30), subdmg[, tascol])
@@ -48,8 +48,6 @@ estimate.scc <- function(filetemplate, prefix, tascol, impcol, initial.temperatu
                     avgtemps2 <- movavg(temps2[-length(temps)], 30, 'w')
 
                     loggdppc <- lgfuns[[paste(mod, ssp, sep='-')]](subdmg$year)
-
-                    print(c(gcm, mod, min(temps)))
 
                     XXs <- rbind(XXs, cbind(tail(temps, nrow(subdmg)),
                                             tail(temps2, nrow(subdmg)),
@@ -70,7 +68,8 @@ estimate.scc <- function(filetemplate, prefix, tascol, impcol, initial.temperatu
     ## Fit a Bayesian model
 
     if (include.climadapt) {
-        stan.model <- "
+        if (include.intercept) {
+            stan.model <- "
 data {
     int<lower=0> I;
     vector[I] T;
@@ -91,9 +90,32 @@ parameters {
 model {
     y ~ normal(alpha + (beta1 * (T - adapt * DavgT) + beta2 * (T2 - adapt * DavgT2)) .* exp(gamma * logGDPpc), epsilon);
 }"
+        } else {
+            stan.model <- "
+data {
+    int<lower=0> I;
+    vector[I] T;
+    vector[I] T2;
+    vector[I] DavgT;
+    vector[I] DavgT2;
+    vector[I] logGDPpc;
+    vector[I] y;
+}
+parameters {
+    real beta1;
+    real<lower=0, upper=.05> beta2; // strong assumption, but need for convergence
+    real<lower=0, upper=1> adapt;
+    real<lower=-3, upper=0> gamma; // assumptions: doubling -> >12.5% of impact
+    real<lower=0> epsilon;
+}
+model {
+    y ~ normal((beta1 * (T - adapt * DavgT) + beta2 * (T2 - adapt * DavgT2)) .* exp(gamma * logGDPpc), epsilon);
+}"
+        }
     } else {
         ## No climate adaptation estimation
-        stan.model <- "
+        if (include.intercept) {
+            stan.model <- "
 data {
     int<lower=0> I;
     vector[I] DavgT;
@@ -111,6 +133,25 @@ parameters {
 model {
     y ~ normal(alpha + (beta1 * DavgT + beta2 * DavgT2) .* exp(gamma * logGDPpc), epsilon);
 }"
+        } else {
+            stan.model <- "
+data {
+    int<lower=0> I;
+    vector[I] DavgT;
+    vector[I] DavgT2;
+    vector[I] logGDPpc;
+    vector[I] y;
+}
+parameters {
+    real beta1;
+    real<lower=0, upper=.05> beta2; // strong assumption, but need for convergence
+    real<lower=-3, upper=0> gamma; // assumptions: doubling -> >12.5% of impact
+    real<lower=0> epsilon;
+}
+model {
+    y ~ normal((beta1 * DavgT + beta2 * DavgT2) .* exp(gamma * logGDPpc), epsilon);
+}"
+        }
     }
 
     inc <- !is.na(yys)
@@ -123,15 +164,29 @@ model {
     ## Plot the parameters
 
     if (include.climadapt) {
-        plot <- ggplot(data.frame(x=c(la$alpha, la$beta1, la$beta2, la$adapt, la$gamma, la$epsilon),
-                                  group=rep(c("alpha", "beta1", "beta2", "adapt", "gamma", "sigma"), each=length(la$alpha))),
-                       aes(x)) +
-            facet_wrap( ~ group, scales="free") + geom_density() + xlab("") + ylab("Density") + theme_bw()
+        if (include.intercept) {
+            plot <- ggplot(data.frame(x=c(la$alpha, la$beta1, la$beta2, la$adapt, la$gamma, la$epsilon),
+                                      group=rep(c("alpha", "beta1", "beta2", "adapt", "gamma", "sigma"), each=length(la$alpha))),
+                           aes(x)) +
+                facet_wrap( ~ group, scales="free") + geom_density() + xlab("") + ylab("Density") + theme_bw()
+        } else {
+            plot <- ggplot(data.frame(x=c(la$beta1, la$beta2, la$adapt, la$gamma, la$epsilon),
+                                      group=rep(c("beta1", "beta2", "adapt", "gamma", "sigma"), each=length(la$beta1))),
+                           aes(x)) +
+                facet_wrap( ~ group, scales="free") + geom_density() + xlab("") + ylab("Density") + theme_bw()
+        }
     } else {
-        plot <- ggplot(data.frame(x=c(la$alpha, la$beta1, la$beta2, la$gamma, la$epsilon),
-                                  group=rep(c("alpha", "beta1", "beta2", "gamma", "sigma"), each=length(la$alpha))),
-                       aes(x)) +
-            facet_wrap( ~ group, scales="free") + geom_density() + xlab("") + ylab("Density") + theme_bw()
+        if (include.intercept) {
+            plot <- ggplot(data.frame(x=c(la$alpha, la$beta1, la$beta2, la$gamma, la$epsilon),
+                                      group=rep(c("alpha", "beta1", "beta2", "gamma", "sigma"), each=length(la$alpha))),
+                           aes(x)) +
+                facet_wrap( ~ group, scales="free") + geom_density() + xlab("") + ylab("Density") + theme_bw()
+        } else {
+            plot <- ggplot(data.frame(x=c(la$beta1, la$beta2, la$gamma, la$epsilon),
+                                      group=rep(c("beta1", "beta2", "gamma", "sigma"), each=length(la$beta1))),
+                           aes(x)) +
+                facet_wrap( ~ group, scales="free") + geom_density() + xlab("") + ylab("Density") + theme_bw()
+        }
     }
     ggsave(paste0("graphs/", prefix, "-params.pdf"), width=8, height=6)
 
@@ -152,7 +207,10 @@ model {
             sum((yys - yypreds)^2, na.rm=T)
         }
 
-        params <- c(mean(la$alpha), mean(la$beta1), mean(la$beta2), mean(la$adapt), mean(la$gamma))
+        if (include.intercept)
+            params <- c(mean(la$alpha), mean(la$beta1), mean(la$beta2), mean(la$adapt), mean(la$gamma))
+        else
+            params <- c(0, mean(la$beta1), mean(la$beta2), mean(la$adapt), mean(la$gamma))
     } else {
         objective <- function(params) {
             alpha <- params[1]
@@ -164,25 +222,29 @@ model {
             sum((yys - yypreds)^2, na.rm=T)
         }
 
-        params <- c(mean(la$alpha), mean(la$beta1), mean(la$beta2), mean(la$gamma))
+        if (include.intercept)
+            params <- c(mean(la$alpha), mean(la$beta1), mean(la$beta2), mean(la$gamma))
+        else
+            params <- c(0, mean(la$beta1), mean(la$beta2), mean(la$gamma))
     }
 
     1 - objective(params) / objective(c(mean(yys, na.rm=T), rep(0, 4)))
 
     if (include.climadapt) {
-        ## Report the damage function now under weather, now under climate, and in 2050
+        ## Report the damage function now under weather, now under climate, and income growth
 
+        alpha <- params[1]
         beta1 <- params[2]
         beta2 <- params[3]
         adapt <- params[4]
         gamma <- params[5]
 
         temps <- seq(0, max(XXs[, 1]), length.out=100)
-        weather.baseline <- (beta1 * temps + beta2 * temps^2)
-        climate.baseline <- (beta1 * (1 - adapt) * temps + beta2 * (1 - adapt) * temps^2)
-        climate.2050 <- (beta1 * (1 - adapt) * temps + beta2 * (1 - adapt) * temps^2) * exp(gamma * (mean(XXs[, 5]) - min(XXs[, 5])))
+        weather.baseline <- alpha + (beta1 * temps + beta2 * temps^2)
+        climate.baseline <- alpha + (beta1 * (1 - adapt) * temps + beta2 * (1 - adapt) * temps^2)
+        climate.income <- alpha + (beta1 * (1 - adapt) * temps + beta2 * (1 - adapt) * temps^2) * exp(gamma * (lgfuns[[ssp]](seq(2000, 2100, length.out=100)) - min(XXs[, 5])))
 
-        ggplot(data.frame(temp=rep(temps, 3), damage=c(weather.baseline, climate.baseline, climate.2050), group=rep(c('No adaptation', 'Climate adaptation', 'Climate and income adaptation'), each=length(temps))),
+        ggplot(data.frame(temp=rep(temps, 3), damage=c(weather.baseline, climate.baseline, climate.income), group=rep(c('No adaptation', 'Climate adaptation', 'Climate and income adaptation'), each=length(temps))),
                aes(temp, damage, colour=group)) +
             geom_line() + geom_hline(yintercept=0) + scale_x_continuous(expand=c(0, 0)) +
             theme_bw() + scale_colour_discrete(name="") + xlab(temperature.description) +
@@ -191,17 +253,18 @@ model {
             scale_y_continuous(labels = scales::percent)
         ggsave(paste0("graphs/", prefix, "-dmgfunc.pdf"), width=6, height=4)
     } else {
-        ## Report the damage function now under climate, and in 2050
+        ## Report the damage function now under climate, and income growth
 
+        alpha <- params[1]
         beta1 <- params[2]
         beta2 <- params[3]
         gamma <- params[4]
 
         temps <- seq(0, max(XXs[, 1]), length.out=100)
-        climate.baseline <- (beta1 * temps + beta2 * temps^2)
-        climate.2050 <- (beta1 * temps + beta2 * temps^2) * exp(gamma * (mean(XXs[, 5]) - min(XXs[, 5])))
+        climate.baseline <- alpha + (beta1 * temps + beta2 * temps^2)
+        climate.income <- alpha + (beta1 * temps + beta2 * temps^2) * exp(gamma * (lgfuns[[ssp]](seq(2000, 2100, length.out=100)) - min(XXs[, 5])))
 
-        ggplot(data.frame(temp=rep(temps, 2), damage=c(climate.baseline, climate.2050), group=rep(c('Climate adaptation', 'Climate and income adaptation'), each=length(temps))),
+        ggplot(data.frame(temp=rep(temps, 2), damage=c(climate.baseline, climate.income), group=rep(c('Climate adaptation', 'Climate and income adaptation'), each=length(temps))),
                aes(temp, damage, colour=group)) +
             geom_line() + geom_hline(yintercept=0) + scale_x_continuous(expand=c(0, 0)) +
             theme_bw() + scale_colour_discrete(name="") + xlab(temperature.description) +
