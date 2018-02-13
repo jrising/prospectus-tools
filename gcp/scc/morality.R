@@ -19,6 +19,7 @@ temperature.description <- "Temperature change since 1980"
 impact.description <- "Population Average VSL-monetized deaths (% GDP)"
 include.climadapt <- F
 include.intercept <- F
+ggaddon <- function(gp) gp + xlab(temperature.description) + ylab(impact.description) + scale_y_continuous(labels = scales::percent)
 
 for (ii in 1:length(impcols)) {
     print(impcols[ii])
@@ -30,6 +31,7 @@ for (ii in 1:length(impcols)) {
 
         prefix <- paste0(prefixs[ii], '-', costprefix)
         impcol <- gsub("COSTS", costs, impcols[ii])
-        estimate.scc(filetemplate, prefix, tascol, impcol, initial.temperature, temperature.description, impact.description, include.climadapt, include.intercept)
+        get.impact <- function(subdmg) subdmg[, impcol]
+        estimate.scc(filetemplate, prefix, tascol, get.impact, initial.temperature, ggaddon, 75.59e12, include.climadapt, include.intercept)
     }
 }

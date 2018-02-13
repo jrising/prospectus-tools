@@ -11,8 +11,7 @@ library(xtable)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 
-estimate.scc <- function(filetemplate, prefix, tascol, impcol, initial.temperature, temperature.description, impact.description, include.climadapt=F, include.intercept=F) {
-
+estimate.scc <- function(filetemplate, prefix, tascol, get.impact, initial.temperature, ggaddon, scc.scale, include.climadapt=F, include.intercept=F) {
     yys <- c()
     XXs <- matrix(NA, 0, 5) # T, T^2, D[avgT], D[avgT^2], gdppc
 
@@ -53,16 +52,15 @@ estimate.scc <- function(filetemplate, prefix, tascol, impcol, initial.temperatu
                                             tail(temps2, nrow(subdmg)),
                                             tail(avgtemps, nrow(subdmg)),
                                             tail(avgtemps2, nrow(subdmg)), loggdppc))
-                    yys <- c(yys, subdmg[, impcol])
+                    yys <- c(yys, get.impact(subdmg))
                 }
             }
         }
     }
 
-    ggplot(data.frame(yys, xxs=XXs[, 1], loggdppc=XXs[, 5]), aes(xxs, yys, colour=loggdppc)) +
-        geom_point() + geom_smooth() +
-        theme_minimal() + scale_colour_continuous(name="Log GDP pc") +
-        xlab(temperature.description) + ylab(impact.description)
+    ggaddon(ggplot(data.frame(yys, xxs=XXs[, 1], loggdppc=XXs[, 5]), aes(xxs, yys, colour=loggdppc)) +
+            geom_point() + geom_smooth() +
+            theme_minimal() + scale_colour_continuous(name="Log GDP pc"))
     ggsave(paste0("graphs/", prefix, "-data.pdf"), width=8, height=6)
 
     ## Fit a Bayesian model
@@ -244,13 +242,11 @@ model {
         climate.baseline <- alpha + (beta1 * (1 - adapt) * temps + beta2 * (1 - adapt) * temps^2)
         climate.income <- alpha + (beta1 * (1 - adapt) * temps + beta2 * (1 - adapt) * temps^2) * exp(gamma * (lgfuns[[ssp]](seq(2000, 2100, length.out=100)) - min(XXs[, 5])))
 
-        ggplot(data.frame(temp=rep(temps, 3), damage=c(weather.baseline, climate.baseline, climate.income), group=rep(c('No adaptation', 'Climate adaptation', 'Climate and income adaptation'), each=length(temps))),
-               aes(temp, damage, colour=group)) +
-            geom_line() + geom_hline(yintercept=0) + scale_x_continuous(expand=c(0, 0)) +
-            theme_bw() + scale_colour_discrete(name="") + xlab(temperature.description) +
-            ylab(impact.description) +
-            theme(legend.position=c(.01, .99), legend.justification=c(0, 1)) +
-            scale_y_continuous(labels = scales::percent)
+        ggaddon(ggplot(data.frame(temp=rep(temps, 3), damage=c(weather.baseline, climate.baseline, climate.income), group=rep(c('No adaptation', 'Climate adaptation', 'Climate and income adaptation'), each=length(temps))),
+                       aes(temp, damage, colour=group)) +
+                geom_line() + geom_hline(yintercept=0) + scale_x_continuous(expand=c(0, 0)) +
+                theme_bw() + scale_colour_discrete(name="") +
+                theme(legend.position=c(.01, .99), legend.justification=c(0, 1)))
         ggsave(paste0("graphs/", prefix, "-dmgfunc.pdf"), width=6, height=4)
     } else {
         ## Report the damage function now under climate, and income growth
@@ -264,13 +260,11 @@ model {
         climate.baseline <- alpha + (beta1 * temps + beta2 * temps^2)
         climate.income <- alpha + (beta1 * temps + beta2 * temps^2) * exp(gamma * (lgfuns[[ssp]](seq(2000, 2100, length.out=100)) - min(XXs[, 5])))
 
-        ggplot(data.frame(temp=rep(temps, 2), damage=c(climate.baseline, climate.income), group=rep(c('Climate adaptation', 'Climate and income adaptation'), each=length(temps))),
-               aes(temp, damage, colour=group)) +
-            geom_line() + geom_hline(yintercept=0) + scale_x_continuous(expand=c(0, 0)) +
-            theme_bw() + scale_colour_discrete(name="") + xlab(temperature.description) +
-            ylab(impact.description) +
-            theme(legend.position=c(.01, .99), legend.justification=c(0, 1)) +
-            scale_y_continuous(labels = scales::percent)
+        ggaddon(ggplot(data.frame(temp=rep(temps, 2), damage=c(climate.baseline, climate.income), group=rep(c('Climate adaptation', 'Climate and income adaptation'), each=length(temps))),
+                       aes(temp, damage, colour=group)) +
+                geom_line() + geom_hline(yintercept=0) + scale_x_continuous(expand=c(0, 0)) +
+                theme_bw() + scale_colour_discrete(name="") +
+                theme(legend.position=c(.01, .99), legend.justification=c(0, 1)))
         ggsave(paste0("graphs/", prefix, "-dmgfunc.pdf"), width=6, height=4)
     }
 
@@ -337,7 +331,7 @@ model {
             }
 
             for (discountrate in seq(0, .07, by=.01)) {
-                scc <- sum((costs2 - costs1) * exp(-(0:299) * discountrate)) * 75.59e12
+                scc <- sum((costs2 - costs1) * exp(-(0:299) * discountrate)) * scc.scale
                 results <- rbind(results, data.frame(rcp, ssp, discountrate, scc))
             }
         }
