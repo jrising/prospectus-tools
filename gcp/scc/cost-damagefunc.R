@@ -11,7 +11,7 @@ library(xtable)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 
-estimate.scc <- function(filetemplate, prefix, tascol, get.impact, initial.temperature, ggaddon, scc.scale, include.climadapt=F, include.intercept=F) {
+estimate.scc <- function(filetemplate, prefix, tascol, get.impact, initial.temperature, ggaddon, scc.scale, include.climadapt=F, include.intercept=F, include.beta2prior=T) {
     yys <- c()
     XXs <- matrix(NA, 0, 5) # T, T^2, D[avgT], D[avgT^2], gdppc
 
@@ -151,6 +151,9 @@ model {
 }"
         }
     }
+
+    if (!include.beta2prior)
+        stan.model <- gsub("real<lower=0, upper=.05> beta2; // strong assumption, but need for convergence", "real beta2;", stan.model)
 
     inc <- !is.na(yys)
     stan.data <- list(I = sum(inc), T = XXs[inc, 1], T2 = XXs[inc, 2], DavgT = XXs[inc, 3], DavgT2 = XXs[inc, 4], logGDPpc = XXs[inc, 5] - min(XXs[, 5]), y = yys[inc])
