@@ -210,8 +210,10 @@ model {
 
         if (include.intercept)
             params <- c(mean(la$alpha), mean(la$beta1), mean(la$beta2), mean(la$adapt), mean(la$gamma))
-        else
+        else {
             params <- c(0, mean(la$beta1), mean(la$beta2), mean(la$adapt), mean(la$gamma))
+            la$alpha <- rep(0, length(la$beta2))
+        }
     } else {
         objective <- function(params) {
             alpha <- params[1]
@@ -225,8 +227,10 @@ model {
 
         if (include.intercept)
             params <- c(mean(la$alpha), mean(la$beta1), mean(la$beta2), mean(la$gamma))
-        else
+        else {
             params <- c(0, mean(la$beta1), mean(la$beta2), mean(la$gamma))
+            la$alpha <- rep(0, length(la$beta2))
+        }
     }
 
     1 - objective(params) / objective(c(mean(yys, na.rm=T), rep(0, 4)))
@@ -234,39 +238,43 @@ model {
     if (include.climadapt) {
         ## Report the damage function now under weather, now under climate, and income growth
 
-        alpha <- params[1]
-        beta1 <- params[2]
-        beta2 <- params[3]
-        adapt <- params[4]
-        gamma <- params[5]
-
+        incomes <- lgfuns[[ssp]](seq(2000, 2100, length.out=100))
         temps <- seq(0, max(XXs[, 1]), length.out=100)
-        weather.baseline <- alpha + (beta1 * temps + beta2 * temps^2)
-        climate.baseline <- alpha + (beta1 * (1 - adapt) * temps + beta2 * (1 - adapt) * temps^2)
-        climate.income <- alpha + (beta1 * (1 - adapt) * temps + beta2 * (1 - adapt) * temps^2) * exp(gamma * (lgfuns[[ssp]](seq(2000, 2100, length.out=100)) - min(XXs[, 5])))
+        weather.baseline <- matrix(NA, length(la$beta1), length(temps))
+        climate.baseline <- matrix(NA, length(la$beta1), length(temps))
+        climate.income <- matrix(NA, length(la$beta1), length(temps))
 
-        ggaddon(ggplot(data.frame(temp=rep(temps, 3), damage=c(weather.baseline, climate.baseline, climate.income), group=rep(c('No adaptation', 'Climate adaptation', 'Climate and income adaptation'), each=length(temps))),
+        for (ii in 1:length(la$beta1)) {
+            weather.baseline[ii,] <- la$alpha[ii] + (la$beta1[ii] * temps + la$beta2[ii] * temps^2)
+            climate.baseline[ii,] <- la$alpha[ii] + (la$beta1[ii] * (1 - la$adapt[ii]) * temps + la$beta2[ii] * (1 - la$adapt[ii]) * temps^2)
+            climate.income[ii,] <- la$alpha[ii] + (la$beta1[ii] * (1 - la$adapt[ii]) * temps + la$beta2[ii] * (1 - la$adapt[ii]) * temps^2) * exp(la$gamma[ii] * (incomes - min(XXs[, 5])))
+        }
+
+        ggaddon(ggplot(data.frame(temp=rep(temps, 3), damage=c(colMeans(weather.baseline), colMeans(climate.baseline), colMeans(climate.income)), cilo=c(apply(weather.baseline, 2, function(x) quantile(x, probs=.025)), apply(climate.baseline, 2, function(x) quantile(x, probs=.025)), apply(climate.income, 2, function(x) quantile(x, probs=.025))), cihi=c(apply(weather.baseline, 2, function(x) quantile(x, probs=.975)), apply(climate.baseline, 2, function(x) quantile(x, probs=.975)), apply(climate.income, 2, function(x) quantile(x, probs=.975))), group=rep(c('No adaptation', 'Climate adaptation', 'Climate and income adaptation'), each=length(temps))),
                        aes(temp, damage, colour=group)) +
-                geom_line() + geom_hline(yintercept=0) + scale_x_continuous(expand=c(0, 0)) +
-                theme_bw() + scale_colour_discrete(name="") +
+                geom_line() + geom_ribbon(aes(ymin=cilo, ymax=cihi, fill=group), alpha=.5) +
+                geom_hline(yintercept=0) + scale_x_continuous(expand=c(0, 0)) +
+                theme_bw() + scale_colour_discrete(name=NULL) + scale_fill_discrete(name=NULL) +
                 theme(legend.position=c(.01, .99), legend.justification=c(0, 1)))
         ggsave(paste0("graphs/", prefix, "-dmgfunc.pdf"), width=6, height=4)
     } else {
         ## Report the damage function now under climate, and income growth
 
-        alpha <- params[1]
-        beta1 <- params[2]
-        beta2 <- params[3]
-        gamma <- params[4]
-
+        incomes <- lgfuns[[ssp]](seq(2000, 2100, length.out=100))
         temps <- seq(0, max(XXs[, 1]), length.out=100)
-        climate.baseline <- alpha + (beta1 * temps + beta2 * temps^2)
-        climate.income <- alpha + (beta1 * temps + beta2 * temps^2) * exp(gamma * (lgfuns[[ssp]](seq(2000, 2100, length.out=100)) - min(XXs[, 5])))
+        climate.baseline <- matrix(NA, length(la$beta1), length(temps))
+        climate.income <- matrix(NA, length(la$beta1), length(temps))
 
-        ggaddon(ggplot(data.frame(temp=rep(temps, 2), damage=c(climate.baseline, climate.income), group=rep(c('Climate adaptation', 'Climate and income adaptation'), each=length(temps))),
+        for (ii in 1:length(la$beta1)) {
+            climate.baseline[ii,] <- la$alpha[ii] + (la$beta1[ii] * temps + la$beta2[ii] * temps^2)
+            climate.income[ii,] <- la$alpha[ii] + (la$beta1[ii] * temps + la$beta2[ii] * temps^2) * exp(la$gamma[ii] * (incomes - min(XXs[, 5])))
+        }
+
+        ggaddon(ggplot(data.frame(temp=rep(temps, 2), damage=c(colMeans(climate.baseline), colMeans(climate.income)), cilo=c(apply(climate.baseline, 2, function(x) quantile(x, probs=.025)), apply(climate.income, 2, function(x) quantile(x, probs=.025))), cihi=c(apply(climate.baseline, 2, function(x) quantile(x, probs=.975)), apply(climate.income, 2, function(x) quantile(x, probs=.975))), group=rep(c('Climate adaptation', 'Climate and income adaptation'), each=length(temps))),
                        aes(temp, damage, colour=group)) +
-                geom_line() + geom_hline(yintercept=0) + scale_x_continuous(expand=c(0, 0)) +
-                theme_bw() + scale_colour_discrete(name="") +
+                geom_line() + geom_ribbon(aes(ymin=cilo, ymax=cihi, fill=group), alpha=.5) +
+                geom_hline(yintercept=0) + scale_x_continuous(expand=c(0, 0)) +
+                theme_bw() + scale_colour_discrete(name=NULL) + scale_fill_discrete(name=NULL) +
                 theme(legend.position=c(.01, .99), legend.justification=c(0, 1)))
         ggsave(paste0("graphs/", prefix, "-dmgfunc.pdf"), width=6, height=4)
     }
