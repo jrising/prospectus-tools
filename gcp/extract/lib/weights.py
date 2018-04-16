@@ -23,12 +23,34 @@ import numpy as np
 from statsmodels.distributions.empirical_distribution import StepFunction
 
 def get_weights(rcp):
+    weights = get_weights_april2016(rcp)
+    weights.update(get_weights_march2018(rcp))
+
+    return weights
+
+def get_weights_april2016(rcp):
     weights = {}
 
-    with open(os.path.join('weights', rcp + 'w.csv')) as csvfp:
-        reader = csv.reader(csvfp)
+    with open('/shares/gcp/climate/BCSD/SMME/SMME-weights/', rcp + '_2090_SMME_edited_for_April_2016.tsv') as tsvfp:
+        reader = csv.reader(tsvfp, delimiter='\t')
+        header = reader.next()
         for row in reader:
-            weights[row[0]] = float(row[1])
+            model = row[1].split('_')[0].strip('*').tolower()
+            weight = float(row[2])
+            weights[model] = weight
+
+    return weights
+
+def get_weights_march2018(rcp):
+    weights = {}
+
+    with open('/shares/gcp/climate/BCSD/SMME/SMME-weights/', rcp + '_SMME_weights.tsv') as tsvfp:
+        reader = csv.reader(tsvfp, delimiter='\t')
+        header = reader.next()
+        for row in reader:
+            model = row[1].strip('*').tolower()
+            weight = float(row[2])
+            weights[model] = weight
 
     return weights
 
@@ -69,3 +91,13 @@ class WeightedECDF(StepFunction):
             results[pp.index(.5)] = np.median(self.values)
 
         return results
+
+if __name__ == '__main__':
+    import sys
+    
+    batchdir = sys.argv[1]
+
+    for rcp in os.listdir(batchdir):
+        weights = get_weights(rcp)
+        for gcm in os.listdir(os.path.join(batchdir, rcp)):
+            print gcm, weights[gcm.lower()]
