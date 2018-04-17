@@ -31,11 +31,11 @@ def get_weights(rcp):
 def get_weights_april2016(rcp):
     weights = {}
 
-    with open('/shares/gcp/climate/BCSD/SMME/SMME-weights/', rcp + '_2090_SMME_edited_for_April_2016.tsv') as tsvfp:
+    with open('/shares/gcp/climate/BCSD/SMME/SMME-weights/' + rcp + '_2090_SMME_edited_for_April_2016.tsv', 'rU') as tsvfp:
         reader = csv.reader(tsvfp, delimiter='\t')
         header = reader.next()
         for row in reader:
-            model = row[1].split('_')[0].strip('*').tolower()
+            model = row[1].split('_')[0].strip('*').lower()
             weight = float(row[2])
             weights[model] = weight
 
@@ -44,11 +44,13 @@ def get_weights_april2016(rcp):
 def get_weights_march2018(rcp):
     weights = {}
 
-    with open('/shares/gcp/climate/BCSD/SMME/SMME-weights/', rcp + '_SMME_weights.tsv') as tsvfp:
+    with open('/shares/gcp/climate/BCSD/SMME/SMME-weights/' + rcp + '_SMME_weights.tsv', 'rU') as tsvfp:
         reader = csv.reader(tsvfp, delimiter='\t')
         header = reader.next()
         for row in reader:
-            model = row[1].strip('*').tolower()
+            model = row[1].strip('*').lower()
+            if '_' in model:
+                model = 'surrogate_' + model
             weight = float(row[2])
             weights[model] = weight
 
@@ -98,6 +100,12 @@ if __name__ == '__main__':
     batchdir = sys.argv[1]
 
     for rcp in os.listdir(batchdir):
+        if rcp == 'historical':
+            continue
         weights = get_weights(rcp)
+        print weights
         for gcm in os.listdir(os.path.join(batchdir, rcp)):
-            print gcm, weights[gcm.lower()]
+            try:
+                print gcm, weights[gcm.lower()]
+            except:
+                print "Cannot find weight for %s under %s" % (gcm, rcp)
