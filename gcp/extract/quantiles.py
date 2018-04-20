@@ -23,7 +23,7 @@ from lib import results, bundles, weights, configs
 
 config, argv = configs.consume_config()
 
-do_gcmweights = False #config.get('do-gcmweights', True) # Current unavailable
+do_gcmweights = config.get('do-gcmweights', True)
 evalqvals = config.get('evalqvals', [.17, .5, .83])
 output_format = config.get('output-format', 'edfcsv')
 
@@ -108,7 +108,11 @@ for filestuff in data:
             for batch, gcm, iam in data[filestuff][rowstuff]:
                 value = data[filestuff][rowstuff][(batch, gcm, iam)]
                 if do_gcmweights:
-                    weight = model_weights[gcm]
+                    try:
+                        weight = model_weights[gcm.lower()]
+                    except:
+                        print "Warning: No weight available for %s, so dropping." % gcm
+                        weight = 0.
                 else:
                     weight = 1.
                     
