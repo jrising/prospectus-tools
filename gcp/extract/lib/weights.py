@@ -39,6 +39,9 @@ def get_weights_april2016(rcp):
             weight = float(row[2])
             weights[model] = weight
 
+    if rcp == 'rcp45':
+        weights["pattern4"] = 0 # Explicitly remove (so no messages)
+
     return weights
 
 def get_weights_march2018(rcp):
@@ -54,6 +57,9 @@ def get_weights_march2018(rcp):
             weight = float(row[2])
             weights[model] = weight
 
+    if rcp == 'rcp45':
+        weights["surrogate_gfdl-esm2g_06"] = 0 # Explicitly remove (so no messages)
+            
     return weights
 
 def weighted_values(values, weights):
