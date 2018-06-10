@@ -5,6 +5,10 @@ import yaml
 import results
 
 def consume_config():
+    if len(sys.argv) < 2:
+        print "Please specify a configuration (.yml) file."
+        exit()
+    
     argv = []
     config = {}
     if sys.argv[1][-4:] == '.yml':
