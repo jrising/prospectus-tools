@@ -34,7 +34,7 @@ def read(filepath, column='rebased'):
     rootgrp.close()
 
     # Correct bad regions in costs
-    if filepath[-10:] == '-costs.nc4' and not isinstance(regions[0], str) and np.isnan(regions[0]):
+    if filepath[-10:] == '-costs.nc4' and not isinstance(regions[0], str) and not isinstance(regions[0], unicode) and np.isnan(regions[0]):
         rootgrp = Dataset(filepath.replace('-costs.nc4', '.nc4'), 'r', format='NETCDF4')
         regions = rootgrp.variables['regions'][:]
         rootgrp.close()
