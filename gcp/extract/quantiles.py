@@ -138,5 +138,9 @@ for filestuff in data:
                     writer.writerow(list(rowstuff) + list(distribution.inverse(evalqvals)))
             elif output_format == 'valuescsv':
                 for ii in range(len(allvalues)):
-                    writer.writerow(list(rowstuff) + allmontevales[ii] + [allvalues[ii], allweights[ii]])
+                    if isinstance(allvalues[ii], list) or isinstance(allvalues[ii], np.ndarray):
+                        for xx in allvalues[ii]:
+                            writer.writerow(list(rowstuff) + allmontevales[ii] + [xx, allweights[ii]])
+                    else:
+                        writer.writerow(list(rowstuff) + allmontevales[ii] + [allvalues[ii], allweights[ii]])
 
