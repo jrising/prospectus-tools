@@ -99,7 +99,7 @@ def iterate_valid_targets(config, impacts=None, verbose=True):
 ## Plural handling
 
 def is_allregions(config):
-    return not ('region' in config or 'regions' in config)
+    return not ('region' in config or 'regions' in config) and not 'region' in config.get('file-organize', [])
 
 def get_regions(config, allregions):
     if 'region' in config:

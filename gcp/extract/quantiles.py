@@ -66,6 +66,16 @@ for batch, rcp, gcm, iam, ssp, targetdir in configs.iterate_valid_targets(config
     for ii in range(len(basenames)):
         try:
             for region, years, values in bundles.iterate_regions(os.path.join(targetdir, basenames[ii] + '.nc4'), config):
+                if 'region' in config.get('file-organize', []) and 'year' not in config.get('file-organize', []) and output_format == 'valuescsv':
+                    values = vectransforms[ii](values)
+                    filestuff, rowstuff = configs.csv_organize(rcp, ssp, region, 'all', config)
+                    if ii == 0:
+                        results.collect_in_dictionaries(data, values, filestuff, rowstuff, (batch, gcm, iam))
+                    else:
+                        data[filestuff][rowstuff][(batch, gcm, iam)] += values
+                    observations += 1
+                    continue
+                
                 for year, value in bundles.iterate_values(years, values, config):
                     if region == 'all':
                         value = vectransforms[ii](value)
@@ -139,6 +149,13 @@ for filestuff in data:
             elif output_format == 'valuescsv':
                 for ii in range(len(allvalues)):
                     if isinstance(allvalues[ii], list) or isinstance(allvalues[ii], np.ndarray):
+                        if 'region' in config.get('file-organize', []) and 'year' not in config.get('file-organize', []):
+                            for jj in range(len(years)): # still set from before
+                                row = list(rowstuff) + allmontevales[ii] + [allvalues[ii][jj], allweights[ii]]
+                                row[rownames.index('year')] = years[jj]
+                                writer.writerow(row)
+                            continue
+                        
                         for xx in allvalues[ii]:
                             writer.writerow(list(rowstuff) + allmontevales[ii] + [xx, allweights[ii]])
                     else:
