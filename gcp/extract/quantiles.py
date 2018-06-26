@@ -150,9 +150,9 @@ for filestuff in data:
                 for ii in range(len(allvalues)):
                     if isinstance(allvalues[ii], list) or isinstance(allvalues[ii], np.ndarray):
                         if 'region' in config.get('file-organize', []) and 'year' not in config.get('file-organize', []):
-                            for jj in range(len(years)): # still set from before
+                            for jj in range(min(len(allvalues[ii]), len(years))):
                                 row = list(rowstuff) + allmontevales[ii] + [allvalues[ii][jj], allweights[ii]]
-                                row[rownames.index('year')] = years[jj]
+                                row[rownames.index('year')] = years[jj]  # still set from before
                                 writer.writerow(row)
                             continue
                         
