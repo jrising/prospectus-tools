@@ -51,7 +51,7 @@ def iterate_regions(filepath, config={}):
     else:
         years, regions, data1 = read(filepath, 'costs_lb')
         years, regions, data2 = read(filepath, 'costs_ub')
-        data = ((data1 + data2) / 2) / 1e5
+        data = (data2 / 1e5)
 
     config['regionorder'] = list(regions)
 
