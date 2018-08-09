@@ -23,7 +23,7 @@ from lib import results, bundles, weights, configs
 
 config, argv = configs.consume_config()
 
-do_gcmweights = False #config.get('do-gcmweights', True) # Current unavailable
+do_gcmweights = config.get('do-gcmweights', True)
 evalqvals = config.get('evalqvals', [.17, .5, .83])
 output_format = config.get('output-format', 'edfcsv')
 
@@ -66,6 +66,16 @@ for batch, rcp, gcm, iam, ssp, targetdir in configs.iterate_valid_targets(config
     for ii in range(len(basenames)):
         try:
             for region, years, values in bundles.iterate_regions(os.path.join(targetdir, basenames[ii] + '.nc4'), config):
+                if 'region' in config.get('file-organize', []) and 'year' not in config.get('file-organize', []) and output_format == 'valuescsv':
+                    values = vectransforms[ii](values)
+                    filestuff, rowstuff = configs.csv_organize(rcp, ssp, region, 'all', config)
+                    if ii == 0:
+                        results.collect_in_dictionaries(data, values, filestuff, rowstuff, (batch, gcm, iam))
+                    else:
+                        data[filestuff][rowstuff][(batch, gcm, iam)] += values
+                    observations += 1
+                    continue
+                
                 for year, value in bundles.iterate_values(years, values, config):
                     if region == 'all':
                         value = vectransforms[ii](value)
@@ -108,7 +118,11 @@ for filestuff in data:
             for batch, gcm, iam in data[filestuff][rowstuff]:
                 value = data[filestuff][rowstuff][(batch, gcm, iam)]
                 if do_gcmweights:
-                    weight = model_weights[gcm]
+                    try:
+                        weight = model_weights[gcm.lower()]
+                    except:
+                        print "Warning: No weight available for %s, so dropping." % gcm
+                        weight = 0.
                 else:
                     weight = 1.
                     
@@ -134,5 +148,16 @@ for filestuff in data:
                     writer.writerow(list(rowstuff) + list(distribution.inverse(evalqvals)))
             elif output_format == 'valuescsv':
                 for ii in range(len(allvalues)):
-                    writer.writerow(list(rowstuff) + allmontevales[ii] + [allvalues[ii], allweights[ii]])
+                    if isinstance(allvalues[ii], list) or isinstance(allvalues[ii], np.ndarray):
+                        if 'region' in config.get('file-organize', []) and 'year' not in config.get('file-organize', []):
+                            for jj in range(min(len(allvalues[ii]), len(years))):
+                                row = list(rowstuff) + allmontevales[ii] + [allvalues[ii][jj], allweights[ii]]
+                                row[rownames.index('year')] = years[jj]  # still set from before
+                                writer.writerow(row)
+                            continue
+                        
+                        for xx in allvalues[ii]:
+                            writer.writerow(list(rowstuff) + allmontevales[ii] + [xx, allweights[ii]])
+                    else:
+                        writer.writerow(list(rowstuff) + allmontevales[ii] + [allvalues[ii], allweights[ii]])
 

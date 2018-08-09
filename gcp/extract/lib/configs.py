@@ -5,6 +5,10 @@ import yaml
 import results
 
 def consume_config():
+    if len(sys.argv) < 2:
+        print "Please specify a configuration (.yml) file."
+        exit()
+    
     argv = []
     config = {}
     if sys.argv[1][-4:] == '.yml':
@@ -95,7 +99,7 @@ def iterate_valid_targets(config, impacts=None, verbose=True):
 ## Plural handling
 
 def is_allregions(config):
-    return not ('region' in config or 'regions' in config)
+    return not ('region' in config or 'regions' in config) and not 'region' in config.get('file-organize', [])
 
 def get_regions(config, allregions):
     if 'region' in config:
