@@ -1,5 +1,3 @@
-setwd("~/research/gcp/mortality")
-
 library(ggplot2)
 library(mvtnorm)
 
