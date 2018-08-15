@@ -108,3 +108,4 @@ ggplot(rbind(meddf, meddf0, meddf00), aes(TT, yy, colour=name, linetype=name)) +
     scale_colour_discrete(name=NULL) +
     scale_linetype_discrete(name=NULL) +
     theme(legend.justification=c(1,1), legend.position=c(1,1))
+ggsave(paste0("response-", region, ".pdf"), width=8, height=2.5)

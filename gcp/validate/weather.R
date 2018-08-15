@@ -16,4 +16,4 @@ ggplot(regdf, aes(temps, counts, fill=group)) +
     xlab("Daily temperature (C)") +
     scale_fill_discrete(name=NULL) +
     theme(legend.justification=c(1,1), legend.position=c(1,1))
-
+ggsave(paste0("weather-", df[row0, 1], ".pdf"), width=8, height=2.5)
