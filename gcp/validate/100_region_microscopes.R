@@ -5,22 +5,23 @@ library(mvtnorm)
 library(magrittr)
 library(dplyr)
 library(stringr)
+library(plyr)
 
 #------------------------------------------------------------------------------------------
 
 model <- "poly" #poly or spline
-age <- "oldest" #young, older or oldest
+agelist <- list("young","older","oldest")
+#age <- "oldest"
 do.clipping <- T 
 
 #for poly model only
-do.diffclip <- T
+do.diffclip <- F
 
 #for spline model only
-low <- 10 #low kink
+low <- 20 #low kink
 high <- 25 #high kink
-order.low <- 2 #order of low kink
-order.high <- 2 #order of high kink
-
+order.low <- 1 #order of low kink
+order.high <- 3 #order of high kink
 
 #set directory
 wd <- "sacagawea" #"local" or "sacagawea"
@@ -28,13 +29,16 @@ dir <- ifelse(wd == "local", "/Users/trinettachong/Dropbox", "/local/shsiang/Dro
 csvv.dir <- paste0(dir,"/Global ACP/ClimateLaborGlobalPaper/Paper/Datasets/Trin_test/Mortality/timeseries/") 
 csvv.name <- ifelse(model == "poly", "Agespec_interaction_GMFD_POLY-4_TINV_CYA_NW_w1.csvv", paste0("Agespec_interaction_response_polyspline_",low,"C_",high,"C_order2_GMFD.csvv"))
 outputwd <- ifelse(wd == "local", paste0(csvv.dir, "response/"), paste0(dir,"/Global ACP/MORTALITY/Replication_2018/3_Output/6_projection/regionmicroscopes/100_regions/"))
+
 #------------------------------------------------------------------------------------------
 
+for (age in agelist){
+  
 #read csvv
 skip.no <- ifelse(model == "poly", 18,  16) #lines to skip when loading csvv, 18 for poly4, 16 for hddcdd 
 csvv <- read.csv(paste0(csvv.dir, csvv.name), skip = skip.no, header = F, sep= ",", stringsAsFactors = T)
 
-squish_function <- stringr::str_squish #I have to do this because annoying str_function function doesn't work on sacagawea
+squish_function <- stringr::str_squish #I have to do this because annoying str_squish function doesn't work on sacagawea
 
 #subset to relevant rows & remove blank spaces in characters
 csvv <- csvv[-c(2,4,6, nrow(csvv)-1, nrow(csvv)), ] %>%
@@ -55,7 +59,12 @@ if (age=="oldest"){
 #load covariates
 df <- read.csv(paste0(dir, "/Global ACP/ClimateLaborGlobalPaper/Paper/Datasets/Trin_test/Trin_test/socioeconomics/rep_regions_kmeans/rep_regions_mortcovar_trin.csv"))
 
-plot.response <- function(region){
+#create master df
+master <- data.frame()
+
+#plot.response <- function(region){
+
+for (region in as.list(levels(df$jco))){
   
   #assign covariates
   climtas0 <- df$climtas0[df$jco == region] 
@@ -193,13 +202,17 @@ plot.response <- function(region){
   meddf00 <- get.curvedf('Historical', sapply(csvv[3,], function(x) as.numeric(as.character(x))), histall=T)
   meddf00$temp <- seq(-23, 41)
   
-  #plot responses
+  plotdf <- rbind(meddf, meddf0, meddf00) #combine all 3 scenarios
+  plotdf$jco <- region #add name column
+  
+  #plot individual responses
   suffix <- ifelse(do.diffclip==T, "_u", "")
-  plotname <- ifelse(model == "poly", paste0("response-", region,"_",age,"_poly",suffix,".pdf"), paste0("response-", region,"_",age,"_",low, "_", high,".pdf"))
+  plotname <- ifelse(model == "poly", paste0("response-", region,"_",age,"_poly",suffix,".pdf"), paste0("response-", region,"_",age,"_",low, "_", high,"_",order.low,"_",order.high,".pdf"))
+  masterplotname <- ifelse(model == "poly", paste0("response-",age,"_poly",suffix,".pdf"), paste0("response-",age,"_",low, "_", high,"_",order.low,"_",order.high,".pdf"))
   
-  print(paste0("plotting", region))
+  print(paste0("plotting ", region))
   
-  ggplot(rbind(meddf, meddf0, meddf00), aes(x = temp, y = yy, colour=name, linetype=name)) +
+  ggplot(plotdf, aes(x = temp, y = yy, colour=name, linetype=name)) +
     geom_line() + theme_minimal() +
     ylab("Change in deaths / 100,000") +
     scale_x_continuous(expand=c(0, 0)) + xlab("Daily temperature (C)") +
@@ -208,8 +221,42 @@ plot.response <- function(region){
     theme(legend.justification=c(1,1), legend.position=c(1,1))
   ggsave(paste0(outputwd, plotname), width=8, height=2.5)
   
+  #get individual plots ready for 10 x 10 figure
+  if (region == as.list(levels(df$jco))[1]) {
+    master <- plotdf #if it is the first region in the list, assign to master
+    } else {
+    master <- rbind(master, plotdf) #if it is not the 1st region in the list, rowbind with master
+  }
 }
 
-lapply(as.list(levels(df$jco)), plot.response)  #apply plot.response function to all 100 regions
+#plot 100 regions matrix
+print(paste0("plotting 100 regions ", age))
+
+if (age=="oldest"){
+  labelyaxis <- 100
+  } else if (age=="young") {
+  labelyaxis <- 7.5
+  } else {
+  labelyaxis <- 1
+  }
+
+
+ggplot(master, aes(x = temp, y = yy)) +
+  facet_wrap(~ jco) +
+  geom_line(aes(colour=name, linetype=name), size = .5) +
+  geom_label(aes(x=10, y=labelyaxis, label=master$jco), cex=2) +
+  theme_minimal() +
+  ylab("Change in deaths / 100,000") +
+  scale_x_continuous(expand=c(0, 0), breaks=c(-15, 0, 15, 30)) + xlab("Daily temperature (C)") +
+  scale_linetype_discrete(name=NULL) +
+  #scale_colour_manual(breaks=c(F, T), values=c("#000000", "#A01010")) +
+  theme(strip.background = element_blank(),
+    strip.text.x = element_blank(),
+    legend.position="none")
+ggsave(paste0(outputwd, masterplotname), width = 10, height = 10)
+
+}
+
+#lapply(as.list(levels(df$jco)), plot.response)  #apply plot.response function to all 100 regions
 
 
