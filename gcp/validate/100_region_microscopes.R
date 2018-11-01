@@ -15,7 +15,8 @@ agelist <- list("young","older","oldest")
 do.clipping <- T 
 
 #for poly model only
-do.diffclip <- F
+do.diffclip <- T
+minpoly_constraint <- 25 #25 or 30
 
 #for spline model only
 low <- 20 #low kink
@@ -24,7 +25,7 @@ order.low <- 1 #order of low kink
 order.high <- 3 #order of high kink
 
 #set directory
-wd <- "sacagawea" #"local" or "sacagawea"
+wd <- "local" #"local" or "sacagawea"
 dir <- ifelse(wd == "local", "/Users/trinettachong/Dropbox", "/local/shsiang/Dropbox")
 csvv.dir <- paste0(dir,"/Global ACP/ClimateLaborGlobalPaper/Paper/Datasets/Trin_test/Mortality/timeseries/") 
 csvv.name <- ifelse(model == "poly", "Agespec_interaction_GMFD_POLY-4_TINV_CYA_NW_w1.csvv", paste0("Agespec_interaction_response_polyspline_",low,"C_",high,"C_order2_GMFD.csvv"))
@@ -64,7 +65,7 @@ master <- data.frame()
 
 #plot.response <- function(region){
 
-for (region in as.list(levels(df$jco))){
+for (region in as.list(levels(df$jco))){ #100 regions
   
   #assign covariates
   climtas0 <- df$climtas0[df$jco == region] 
@@ -105,9 +106,9 @@ for (region in as.list(levels(df$jco))){
       if (do.clipping) {
         
         yy0 <- get.curve(TT, gammas, climtas0, loggdppc0) 
-        ii.min <- which.min(yy0[TT >= 10 & TT <= 25]) + which(TT == 10) - 1 
+        ii.min <- which.min(yy0[TT >= 10 & TT <= minpoly_constraint]) + which(TT == 10) - 1 
         
-        yy <- pmax(yy0 - yy0[ii.min], 0) #goodmoney clipping
+        yy <- pmax(yy0 - yy0[ii.min], 0) #clipping
         
         if (do.diffclip) { #u-clipping
           yy.nd <- yy
@@ -258,5 +259,5 @@ ggsave(paste0(outputwd, masterplotname), width = 10, height = 10)
 }
 
 #lapply(as.list(levels(df$jco)), plot.response)  #apply plot.response function to all 100 regions
-
+#gammas <- sapply(csvv[3,], function(x) as.numeric(as.character(x)))
 
