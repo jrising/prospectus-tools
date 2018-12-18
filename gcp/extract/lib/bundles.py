@@ -23,13 +23,24 @@ import numpy as np
 from netCDF4 import Dataset
 import configs
 
-def read(filepath, column='rebased'):
+deltamethod_vcv = None
 
+def read(filepath, column='rebased', deltamethod=False):
+    global deltamethod_vcv
+    
     rootgrp = Dataset(filepath, 'r', format='NETCDF4')
 
     years = rootgrp.variables['year'][:]
     regions = rootgrp.variables['regions'][:]
-    data = rootgrp.variables[column][:, :]
+
+    if deltamethod:
+        data = rootgrp.variables[column + '_bcde'][:, :, :]
+        if deltamethod_vcv is None:
+            deltamethod_vcv = rootgrp.variables['vcv'][:, :]
+        else:
+            assert(np.all(deltamethod_vcv == rootgrp.variables['vcv'][:, :]))
+    else:
+        data = rootgrp.variables[column][:, :]
 
     rootgrp.close()
 
@@ -47,10 +58,10 @@ def iterate_regions(filepath, config={}):
     """
 
     if 'column' in config or 'costs' not in filepath:
-        years, regions, data = read(filepath, config.get('column', 'rebased'))
+        years, regions, data = read(filepath, config.get('column', 'rebased'), config.get('deltamethod', False))
     else:
-        years, regions, data1 = read(filepath, 'costs_lb')
-        years, regions, data2 = read(filepath, 'costs_ub')
+        years, regions, data1 = read(filepath, 'costs_lb', config.get('deltamethod', False))
+        years, regions, data2 = read(filepath, 'costs_ub', config.get('deltamethod', False))
         data = ((data1 + data2) / 2) / 1e5
 
     config['regionorder'] = list(regions)
@@ -64,7 +75,10 @@ def iterate_regions(filepath, config={}):
         if region == 'global':
             region = ''
         ii = regions.index(region)
-        yield regions[ii], years, data[:, ii]
+        if config.get('deltamethod', False):
+            yield regions[ii], years, data[:, :, ii]
+        else:
+            yield regions[ii], years, data[:, ii]
 
 def iterate_values(years, values, config={}):
     """
@@ -79,15 +93,27 @@ def iterate_values(years, values, config={}):
         for yearset in yearsets:
             if isinstance(yearset, list):
                 yearset = tuple(yearset)
-            if values.ndim == 1:
-                yield "%d-%d" % yearset, np.mean(values[np.logical_and(years >= yearset[0], years < yearset[1])])
-            else: # multiple regions included
-                yield "%d-%d" % yearset, np.mean(values[np.logical_and(years >= yearset[0], years < yearset[1]), :], axis=0)
+            if config.get('deltamethod', False):
+                if values.ndim == 1:
+                    yield "%d-%d" % yearset, np.mean(values[:, np.logical_and(years >= yearset[0], years < yearset[1])], axis=1)
+                else: # multiple regions included
+                    yield "%d-%d" % yearset, np.mean(values[:, np.logical_and(years >= yearset[0], years < yearset[1]), :], axis=1)
+            else:
+                if values.ndim == 1:
+                    yield "%d-%d" % yearset, np.mean(values[np.logical_and(years >= yearset[0], years < yearset[1])])
+                else: # multiple regions included
+                    yield "%d-%d" % yearset, np.mean(values[np.logical_and(years >= yearset[0], years < yearset[1]), :], axis=0)
         return
 
     years = list(years)
     for year in configs.get_years(config, years):
-        if values.ndim == 1:
-            yield year, values[years.index(year)]
+        if config.get('deltamethod', False):
+            if values.ndim == 2:
+                yield year, values[:, years.index(year)]
+            else:
+                yield year, values[:, years.index(year), :]
         else:
-            yield year, values[years.index(year), :]
+            if values.ndim == 1:
+                yield year, values[years.index(year)]
+            else:
+                yield year, values[years.index(year), :]

@@ -11,6 +11,7 @@ Supported configuration options:
 - do-montecarlo
 - only-rcp
 - only-models (default: `all`)
+- deltamethod (default: `no`)
 - file-organize (default: rcp, ssp)
 - do-gcmweights (default: true)
 - evalqvals (default: [.17, .5, .83])
@@ -117,6 +118,15 @@ for filestuff in data:
 
             for batch, gcm, iam in data[filestuff][rowstuff]:
                 value = data[filestuff][rowstuff][(batch, gcm, iam)]
+                if config.get('deltamethod', False):
+                    if value.ndim == 1:
+                        value = bundles.deltamethod_vcv.dot(value).dot(value)
+                    else:
+                        combined = zeros((value.shape[1]))
+                        for ii in range(value.shape[1]):
+                            combined[ii] = bundles.deltamethod_vcv.dot(value[:, ii]).dot(value[:, ii])
+                        value = combined
+                        
                 if do_gcmweights:
                     try:
                         weight = model_weights[gcm.lower()]
