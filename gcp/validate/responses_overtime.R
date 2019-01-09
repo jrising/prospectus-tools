@@ -26,6 +26,8 @@ library(lattice)
 
 model <- "TINV_clim" #poly or spline
 clim_data <- "GMFD_v3" #BEST
+product <- "total_energy"
+flow <- "COMPILE"
 #Define Income Group Bounds
 if (model == "TINV_clim" & clim_data == "GMFD_v3") {
   IG1_upper = 9.128 #7th term in incbin from model config
@@ -34,14 +36,14 @@ if (model == "TINV_clim" & clim_data == "GMFD_v3") {
 
 yearlist <- seq(2010, 2099) #define time period to plot response functions
 plot.histogram <- F #plot histogram below response?
-regionlist <- list("USA.14.608", "USA.33.1833", "USA.3.103", "USA.3.102", "USA.3.101") #define list of IRs to plot
+regionlist <- list("USA.10.360") #define list of IRs to plot
 
 #set directory
 wd <- "local" #"local" or "sacagawea"
 dir <- ifelse(wd == "local", "/Users/mayanorman/Dropbox/", "/home/manorman/")
 
 csvv.dir <- paste0(dir,"GCP_Reanalysis/ENERGY/IEA_Replication/Projection/eel_projection/",clim_data,"/data/csvv/",model, "/") #location of csvv
-csvv.name <- paste0('FD_FGLS_inter_',clim_data,'_poly2_COMPILE_total_energy_',model,'.csv') #name of csvv file
+csvv.name <- paste0('FD_FGLS_inter_',clim_data,'_poly2_',flow,'_',product,'_',model,'.csv') #name of csvv file
 outputwd <- paste0(dir,"GCP_Reanalysis/ENERGY/IEA_Replication/Projection/eel_projection/",clim_data,"/output/",model,"/") #path for output
 cov.dir <- paste0(dir, "GCP_Reanalysis/ENERGY/IEA/Yuqi_Codes/Data/covars_TINV_clim_1218.dta") #location of covariates
 tas.path <- paste0(dir,"prospectus-tools/gcp/validate/") #location of tas values (for plotting of histogram only, if plot.histogram == F, can ignore)
@@ -162,13 +164,14 @@ plot.response <- function(region){
     #combine all years together
     print(paste0("Combining response curves for all years for ", region, adapt))
     
-    p <- ggplot(master, aes(x = temp, y = yy, group = year)) +
+    p <- ggplot(master, aes(x = TT, y = response, group = year)) +
       geom_line(aes(colour=year), size = 1) +
       geom_line(aes(colour=year), size = 1) +
       geom_hline(yintercept=0, size=.2) + #zeroline
       theme_minimal() +  
       ylab("kWh pc") +
-      coord_cartesian(ylim = c(-20,100))  +
+      xlab("temperature (C)") +
+      coord_cartesian(ylim = c(-20,150))  +
       scale_x_continuous(expand=c(0, 0)) +
       scale_linetype_discrete(name=NULL) +
       scale_color_viridis(option="magma") 
@@ -209,7 +212,7 @@ plot.response <- function(region){
       #ggsave(paste0(outputwd,"weather-", tas[row0, 1], ".pdf"), width=5, height=2.5) #plot histogram alone
       
       g <- arrangeGrob(p, p_hist, nrow=2) #generates new combined plot
-      ggsave(filename=paste0(outputwd, "response_curves_", adapt, "_", region), width = 10, height = 12, g) #plot response function and histogram
+      ggsave(filename=paste0(outputwd, flow, "_",product, "_" ,"response_curves_", adapt, "_", region, ".png"), width = 10, height = 12, g) #plot response function and histogram
     } 
   }
 
