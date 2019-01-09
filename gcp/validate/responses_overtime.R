@@ -65,21 +65,21 @@ get.incGroup <- function(loggdppc) {
 }
 
 #return coefficent based on clim var and covariate
-get.coefficient <- function(coefs, pred, covar) coefs[csvv[1,] == pred & csvv[2,] == covar]
+get.coefficient <- function(coefs, csvv, pred, covar) coefs[csvv[1,] == pred & csvv[2,] == covar]
 
 #Sketch out the response curve
-get.curve <- function(TT, above20, below20, coefs, cdd, hdd, incgroup) { 
+get.curve <- function(TT, above20, below20, coefs, csvv, cdd, hdd, incgroup) { 
   
   if (model == "TINV_clim"){
     
-    beta1 <- get.coefficient(coefs, 'tas', incgroup[[2]]) 
-    beta2 <- get.coefficient(coefs, 'tas2', incgroup[[2]]) 
+    beta1 <- get.coefficient(coefs, csvv, 'tas', incgroup[[2]]) 
+    beta2 <- get.coefficient(coefs, csvv, 'tas2', incgroup[[2]]) 
     
-    gamma1 <- get.coefficient(coefs, 'tas-cdd-20', paste0("climtas-cdd-20*",incgroup[[2]]))*cdd 
-    gamma2 <- get.coefficient(coefs, 'tas-cdd-20-poly-2', paste0("climtas-cdd-20*",incgroup[[2]]))*cdd 
+    gamma1 <- get.coefficient(coefs, csvv, 'tas-cdd-20', paste0("climtas-cdd-20*",incgroup[[2]]))*cdd 
+    gamma2 <- get.coefficient(coefs, csvv, 'tas-cdd-20-poly-2', paste0("climtas-cdd-20*",incgroup[[2]]))*cdd 
     
-    lambda1 <- get.coefficient(coefs, 'tas-hdd-20', paste0("climtas-hdd-20*",incgroup[[2]]))*hdd 
-    lambda2 <- get.coefficient(coefs, 'tas-hdd-20-poly-2', paste0("climtas-hdd-20*",incgroup[[2]]))*hdd 
+    lambda1 <- get.coefficient(coefs, csvv, 'tas-hdd-20', paste0("climtas-hdd-20*",incgroup[[2]]))*hdd 
+    lambda2 <- get.coefficient(coefs, csvv, 'tas-hdd-20-poly-2', paste0("climtas-hdd-20*",incgroup[[2]]))*hdd 
     
     beta <- beta1 * (TT-20) + beta2 * (TT^2 - 400) 
     gamma <- gamma1 * (TT - 20) * above20 + gamma2 * (TT^2 - 400) * above20
@@ -93,9 +93,9 @@ get.curve <- function(TT, above20, below20, coefs, cdd, hdd, incgroup) {
 }
 
 #define function to plot response 
-plot.response <- function(region, adapt){
+plot.response <- function(region){
     
-  
+  adapt <- "fulladapt"
   #Part a: Read in and Clean CSVV ---------------------------------------------------------------------------
     #read & parse csvv for gammas
     skip.no <- 21 #lines to skip when loading csvv, 18 for poly4, 16 for hddcdd 
@@ -137,13 +137,13 @@ plot.response <- function(region, adapt){
       incGroup1 <- get.incGroup(loggdppc1) 
       
       if (adapt == "fulladapt") {
-        plot_df <- get.curve(TT, above20, below20, coefs, climtascdd1, climtashdd1, incGroup1)
+        plot_df <- get.curve(TT, above20, below20, coefs, csvv, climtascdd1, climtashdd1, incGroup1)
       } else if (adapt == "incadapt") {
-        plot_df <- get.curve(TT, above20, below20, coefs, climtascdd0, climtashdd0, incGroup1)
+        plot_df <- get.curve(TT, above20, below20, coefs, csvv, climtascdd0, climtashdd0, incGroup1)
       } else if (adapt == "noadapt") {
-        plot_df <- get.curve(TT, above20, below20, coefs, climtascdd0, climtashdd0, incGroup0)
+        plot_df <- get.curve(TT, above20, below20, coefs, csvv, climtascdd0, climtashdd0, incGroup0)
       } else if (adapt == "climadapt") {
-        plot_df <- get.curve(TT, above20, below20, coefs, climtascdd1, climtashdd1, incGroup0)
+        plot_df <- get.curve(TT, above20, below20, coefs, csvv, climtascdd1, climtashdd1, incGroup0)
       }
       
       plot_df$year <- yr #add name column
