@@ -33,6 +33,10 @@ def read(filepath, column='rebased', deltamethod=False):
     years = rootgrp.variables['year'][:]
     regions = rootgrp.variables['regions'][:]
 
+    if deltamethod is None:
+        # Infer from the file
+        deltamethod = 'vcv' in rootgrp.variables
+        
     if deltamethod:
         data = rootgrp.variables[column + '_bcde'][:, :, :]
         if deltamethod_vcv is None:
@@ -58,12 +62,15 @@ def iterate_regions(filepath, config={}):
     """
 
     if 'column' in config or 'costs' not in filepath:
-        years, regions, data = read(filepath, config.get('column', 'rebased'), config.get('deltamethod', False))
+        years, regions, data = read(filepath, config.get('column', 'rebased'), config.get('deltamethod', None))
     else:
-        years, regions, data1 = read(filepath, 'costs_lb', config.get('deltamethod', False))
-        years, regions, data2 = read(filepath, 'costs_ub', config.get('deltamethod', False))
+        years, regions, data1 = read(filepath, 'costs_lb', config.get('deltamethod', None))
+        years, regions, data2 = read(filepath, 'costs_ub', config.get('deltamethod', None))
         data = ((data1 + data2) / 2) / 1e5
 
+    if deltamethod_vcv is not None:
+        ## Inferred that these were deltamethod files
+        config['deltamethod'] = True
     config['regionorder'] = list(regions)
 
     if configs.is_allregions(config):

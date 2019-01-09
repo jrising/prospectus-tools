@@ -96,6 +96,21 @@ def iterate_valid_targets(config, impacts=None, verbose=True):
     if observations == 0:
         print message_on_none
 
+def interpret_filenames(argv):
+    basenames = []
+    transforms = []
+    vectransforms = []
+    for basename in argv:
+        if basename[0] == '-':
+            basenames.append(basename[1:])
+            transforms.append(lambda x: -x)
+            vectransforms.append(lambda x: -x)
+        else:
+            basenames.append(basename)
+            transforms.append(lambda x: x)
+            vectransforms.append(lambda x: x)
+    return basenames, transforms, vectransforms
+        
 ## Plural handling
 
 def is_allregions(config):

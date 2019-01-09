@@ -28,18 +28,7 @@ do_gcmweights = config.get('do-gcmweights', True)
 evalqvals = config.get('evalqvals', [.17, .5, .83])
 output_format = config.get('output-format', 'edfcsv')
 
-basenames = []
-transforms = []
-vectransforms = []
-for basename in argv:
-    if basename[0] == '-':
-        basenames.append(basename[1:])
-        transforms.append(lambda x: -x)
-        vectransforms.append(lambda x: -x)
-    else:
-        basenames.append(basename)
-        transforms.append(lambda x: x)
-        vectransforms.append(lambda x: x)
+basenames, transforms, vectransforms = configs.interpret_filenames(argv)
 
 # Collect all available results
 data = {} # { filestuff => { rowstuff => { batch-gcm-iam => value } } }
