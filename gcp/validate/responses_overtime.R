@@ -175,7 +175,7 @@ plot.response <- function(region){
       scale_x_continuous(expand=c(0, 0)) +
       scale_linetype_discrete(name=NULL) +
       scale_color_viridis(option="magma") 
-      ggsave(paste0(outputwd, "response_curves_", adapt, "_", region,".png"), width = 10, height = 10) #plot response function 
+      ggsave(paste0(outputwd, flow, "_",product, "_" ,"response_curves_", adapt, "_", region,".png"), width = 10, height = 10) #plot response function 
     
     # plot histograms
     if (plot.histogram){
