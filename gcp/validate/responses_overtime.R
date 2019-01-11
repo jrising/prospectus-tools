@@ -36,17 +36,17 @@ if (model == "TINV_clim" & clim_data == "GMFD_v3") {
 
 yearlist <- seq(2010, 2099) #define time period to plot response functions
 plot.histogram <- F #plot histogram below response?
-regionlist <- list("USA.10.360") #define list of IRs to plot
+regionlist <- list("USA.10.360","USA.5.224", "CHL.13.53.295", "ARE.3", "AUS.11.1267", "VEN.24.311", "IND.27.404.1579") #define list of IRs to plot  Miami, SF, Quintero Chile, Dubai, Broome AUS, Maracaibo VEN
 
 #set directory
-wd <- "local" #"local" or "sacagawea"
+wd <- "sac" #"local" or "sacagawea"
 dir <- ifelse(wd == "local", "/Users/mayanorman/Dropbox/", "/home/manorman/")
 
 csvv.dir <- paste0(dir,"GCP_Reanalysis/ENERGY/IEA_Replication/Projection/eel_projection/",clim_data,"/data/csvv/",model, "/") #location of csvv
 csvv.name <- paste0('FD_FGLS_inter_',clim_data,'_poly2_',flow,'_',product,'_',model,'.csv') #name of csvv file
 outputwd <- paste0(dir,"GCP_Reanalysis/ENERGY/IEA_Replication/Projection/eel_projection/",clim_data,"/output/",model,"/") #path for output
 cov.dir <- paste0(dir, "GCP_Reanalysis/ENERGY/IEA/Yuqi_Codes/Data/covars_TINV_clim_1218.dta") #location of covariates
-tas.path <- paste0(dir,"prospectus-tools/gcp/validate/") #location of tas values (for plotting of histogram only, if plot.histogram == F, can ignore)
+tas.path <- paste0(dir,"GCP_Reanalysis/ENERGY/IEA/Yuqi_Codes/Data/tas-dists_GMFD_vs_BEST.csv") #location of tas values (for plotting of histogram only, if plot.histogram == F, can ignore)
 
 #------------------------------------------------------------------------------------------
 
@@ -175,16 +175,19 @@ plot.response <- function(region){
       scale_x_continuous(expand=c(0, 0)) +
       scale_linetype_discrete(name=NULL) +
       scale_color_viridis(option="magma") 
-      ggsave(paste0(outputwd, flow, "_",product, "_" ,"response_curves_", adapt, "_", region,".png"), width = 10, height = 10) #plot response function 
+      ggsave(paste0(outputwd, flow, "_",product,"_","response_curves_",adapt,"_", region,".png"), width = 10, height = 10) #plot response function 
     
     # plot histograms
     if (plot.histogram){
       
-      tas <- read.csv(paste0(tas.path,"tas-dists.csv"))
+      tas <- read.csv(paste0(tas.path))
       row0 <- which(tas$hierid==region)[1]
       
-      temp.low <- as.numeric(substr(names(tas)[4], nchar(names(tas))[4] - 1, nchar(names(tas)[4]))) + 0.5
-      temp.high <- as.numeric(substr(names(tas)[length(tas)], 4,5)) + 0.5
+      #temp.low <- as.numeric(substr(names(tas)[4], nchar(names(tas))[4] - 1, nchar(names(tas)[4]))) + 0.5
+      #temp.high <- as.numeric(substr(names(tas)[length(tas)], 4,5)) + 0.5
+      
+      temp.low <- 3.5
+      temp.high <- 43.5
       
       if(substr(names(tas)[3], 4,4) == "."){ #if temperature in tas-dists range from negative numbers
         temps <- seq(-temp.low, temp.high)
