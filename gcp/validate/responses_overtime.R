@@ -34,6 +34,11 @@ if (model == "TINV_clim" & clim_data == "GMFD_v3") {
   IG2_upper = 9.873 #9th term in incbin from model config
 }
 
+if (model == "TINV_clim" & clim_data == "BEST") {
+  IG1_upper =  9.198 #7th term in incbin from model config
+  IG2_upper = 9.919 #9th term in incbin from model config
+}
+
 yearlist <- seq(2010, 2099) #define time period to plot response functions
 plot.histogram <- T #plot histogram below response?
 regionlist <- list("USA.10.360","USA.5.224", "CHL.13.53.295", "ARE.3", "AUS.11.1267", "VEN.24.311", "IND.27.404.1579") #define list of IRs to plot  Miami, SF, Quintero Chile, Dubai, Broome AUS, Maracaibo VEN
@@ -44,7 +49,7 @@ dir <- ifelse(wd == "local", "/Users/mayanorman/Dropbox/", "/home/manorman/")
 
 csvv.dir <- paste0(dir,"GCP_Reanalysis/ENERGY/IEA_Replication/Projection/eel_projection/",clim_data,"/data/csvv/",model, "/") #location of csvv
 csvv.name <- paste0('FD_FGLS_inter_',clim_data,'_poly2_',flow,'_',product,'_',model,'.csv') #name of csvv file
-outputwd <- paste0(dir,"GCP_Reanalysis/ENERGY/IEA_Replication/Projection/eel_projection/",clim_data,"/output/",model,"/") #path for output
+outputwd <- paste0(dir,"GCP_Reanalysis/ENERGY/IEA_Replication/Projection/eel_projection/",clim_data,"/output/",model,"/",flow,"_",product,"/") #path for output
 cov.dir <- paste0(dir, "GCP_Reanalysis/ENERGY/IEA/Yuqi_Codes/Data/covars_TINV_clim_1218.dta") #location of covariates
 tas.path <- paste0(dir,"GCP_Reanalysis/ENERGY/IEA/Yuqi_Codes/Data/tas-dists_GMFD_vs_BEST.csv") #location of tas values (for plotting of histogram only, if plot.histogram == F, can ignore)
 
