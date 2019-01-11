@@ -35,7 +35,7 @@ if (model == "TINV_clim" & clim_data == "GMFD_v3") {
 }
 
 yearlist <- seq(2010, 2099) #define time period to plot response functions
-plot.histogram <- F #plot histogram below response?
+plot.histogram <- T #plot histogram below response?
 regionlist <- list("USA.10.360","USA.5.224", "CHL.13.53.295", "ARE.3", "AUS.11.1267", "VEN.24.311", "IND.27.404.1579") #define list of IRs to plot  Miami, SF, Quintero Chile, Dubai, Broome AUS, Maracaibo VEN
 
 #set directory
@@ -183,19 +183,19 @@ plot.response <- function(region){
       tas <- read.csv(paste0(tas.path))
       row0 <- which(tas$hierid==region)[1]
       
-      #temp.low <- as.numeric(substr(names(tas)[4], nchar(names(tas))[4] - 1, nchar(names(tas)[4]))) + 0.5
-      #temp.high <- as.numeric(substr(names(tas)[length(tas)], 4,5)) + 0.5
+      temp.low <- as.numeric(substr(names(tas)[4], nchar(names(tas))[4] - 1, nchar(names(tas)[4]))) + 0.5
+      temp.high <- as.numeric(substr(names(tas)[length(tas)], 4,5)) + 0.5
       
       temp.low <- 3.5
       temp.high <- 43.5
       
-      if(substr(names(tas)[3], 4,4) == "."){ #if temperature in tas-dists range from negative numbers
-        temps <- seq(-temp.low, temp.high)
-      } else{
-        temps <- seq(temp.low-1, temp.high)
-      }
+      #if(substr(names(tas)[3], 4,4) == "."){ #if temperature in tas-dists range from negative numbers
+      #  temps <- seq(-temp.low, temp.high)
+      #} else{
+      #  temps <- seq(temp.low-1, temp.high)
+      #}
       
-      #temps <- seq(-23, 41)
+      temps <- seq(temp.low, temp.high)
       
       regtas <- data.frame(group=rep(c('Historical', 'RCP 8.5 2095'), each=length(temps)),
                            temps=rep(temps, 2),
