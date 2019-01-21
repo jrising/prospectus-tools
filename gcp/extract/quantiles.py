@@ -1,5 +1,5 @@
 """
-Usage: `python quantiles.py CONFIG <->BASENAME...
+Usage: `python quantiles.py CONFIG <->BASENAME<:column>...
 
 Supported configuration options:
 - column (default: `rebased`)
@@ -28,7 +28,7 @@ do_gcmweights = config.get('do-gcmweights', True)
 evalqvals = config.get('evalqvals', [.17, .5, .83])
 output_format = config.get('output-format', 'edfcsv')
 
-basenames, transforms, vectransforms = configs.interpret_filenames(argv)
+columns, basenames, transforms, vectransforms = configs.interpret_filenames(argv, config)
 
 # Collect all available results
 data = {} # { filestuff => { rowstuff => { batch-gcm-iam => value } } }
@@ -55,7 +55,7 @@ for batch, rcp, gcm, iam, ssp, targetdir in configs.iterate_valid_targets(config
     # Extract the values
     for ii in range(len(basenames)):
         try:
-            for region, years, values in bundles.iterate_regions(os.path.join(targetdir, basenames[ii] + '.nc4'), config):
+            for region, years, values in bundles.iterate_regions(os.path.join(targetdir, basenames[ii] + '.nc4'), columns[ii], config):
                 if 'region' in config.get('file-organize', []) and 'year' not in config.get('file-organize', []) and output_format == 'valuescsv':
                     values = vectransforms[ii](values)
                     filestuff, rowstuff = configs.csv_organize(rcp, ssp, region, 'all', config)

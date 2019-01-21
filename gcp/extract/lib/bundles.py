@@ -56,13 +56,9 @@ def read(filepath, column='rebased', deltamethod=False):
 
     return years, regions, data
 
-def iterate_regions(filepath, config={}):
-    """
-    Config options: column
-    """
-
-    if 'column' in config or 'costs' not in filepath:
-        years, regions, data = read(filepath, config.get('column', 'rebased'), config.get('deltamethod', None))
+def iterate_regions(filepath, column, config={}):
+    if column is not None or 'costs' not in filepath:
+        years, regions, data = read(filepath, column if column is not None else 'rebased', config.get('deltamethod', None))
     else:
         years, regions, data1 = read(filepath, 'costs_lb', config.get('deltamethod', None))
         years, regions, data2 = read(filepath, 'costs_ub', config.get('deltamethod', None))

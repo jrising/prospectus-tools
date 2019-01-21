@@ -96,20 +96,31 @@ def iterate_valid_targets(config, impacts=None, verbose=True):
     if observations == 0:
         print message_on_none
 
-def interpret_filenames(argv):
+def interpret_filenames(argv, config):
+    columns = []
     basenames = []
     transforms = []
     vectransforms = []
     for basename in argv:
         if basename[0] == '-':
-            basenames.append(basename[1:])
+            basename = basename[1:]
             transforms.append(lambda x: -x)
             vectransforms.append(lambda x: -x)
         else:
-            basenames.append(basename)
             transforms.append(lambda x: x)
             vectransforms.append(lambda x: x)
-    return basenames, transforms, vectransforms
+        if ':' in basename:
+            columns.append(basename.split(':')[1])
+            basename = basename.split(':')[0]
+            if basename == '':
+                assert len(basenames) > 0, "Must have a previous basename to duplicate."
+                basename = basenames[-1]
+        else:
+            columns.append(config.get('column', None))
+            
+        basenames.append(basename)
+
+    return columns, basenames, transforms, vectransforms
         
 ## Plural handling
 

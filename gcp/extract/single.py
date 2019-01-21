@@ -13,12 +13,12 @@ import sys, csv
 from lib import bundles, configs
 
 config, argv = configs.consume_config()
-basenames, transforms, vectransforms = configs.interpret_filenames(argv)
+columns, basenames, transforms, vectransforms = configs.interpret_filenames(argv, config)
 
 data = {} # {region => { year => value }}
 
 for ii in range(len(basenames)):
-    for region, years, values in bundles.iterate_regions(basenames[ii], config):
+    for region, years, values in bundles.iterate_regions(basenames[ii], columns[ii], config):
         if region not in data:
             data[region] = {}
         for year, value in bundles.iterate_values(years, values, config):
