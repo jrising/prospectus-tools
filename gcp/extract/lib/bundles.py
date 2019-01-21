@@ -27,8 +27,12 @@ deltamethod_vcv = None
 
 def read(filepath, column='rebased', deltamethod=False):
     global deltamethod_vcv
-    
-    rootgrp = Dataset(filepath, 'r', format='NETCDF4')
+
+    try:
+        rootgrp = Dataset(filepath, 'r', format='NETCDF4')
+    except:
+        print "Error: Cannot read %s" % filepath
+        exit()
 
     years = rootgrp.variables['year'][:]
     regions = rootgrp.variables['regions'][:]

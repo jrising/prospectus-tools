@@ -104,6 +104,7 @@ def interpret_filenames(argv, config):
     for basename in argv:
         if basename[0] == '-':
             basename = basename[1:]
+            assert basename, "Error: Cannot interpret a single dash."
             transforms.append(lambda x: -x)
             vectransforms.append(lambda x: -x)
         else:
