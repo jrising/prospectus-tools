@@ -13,7 +13,7 @@ Supported configuration options:
 - only-models (default: `all`)
 - file-organize (default: rcp, ssp)
 - do-gcmweights (default: true)
-- evalqvals (default: [.17, .5, .83])
+- evalqvals (default: ['mean', .17, .5, .83])
 """
 
 import os, sys, csv, traceback, yaml
@@ -24,7 +24,7 @@ from lib import results, bundles, weights, configs
 config, argv = configs.consume_config()
 
 do_gcmweights = config.get('do-gcmweights', True)
-evalqvals = config.get('evalqvals', [.17, .5, .83])
+evalqvals = config.get('evalqvals', ['mean', .17, .5, .83])
 output_format = config.get('output-format', 'edfcsv')
 
 columns = []
@@ -112,10 +112,12 @@ for filestuff in data:
         rownames = configs.csv_rownames(config)
 
         if output_format == 'edfcsv':
-            writer.writerow(rownames + map(lambda q: 'q' + str(int(q * 100)), evalqvals))
+            writer.writerow(rownames + map(lambda q: q if isinstance(q, str) else 'q' + str(int(q * 100)), evalqvals))
+            encoded_evalqvals = weights.WeightedECDF.encode_evalqvals(evalqvals)
         elif output_format == 'valuescsv':
             writer.writerow(rownames + ['batch', 'gcm', 'iam', 'value', 'weight'])
 
+            
         for rowstuff in configs.csv_sorted(data[filestuff].keys(), config):
             print "Outputing row: " + str(rowstuff)
             if do_gcmweights:
@@ -152,10 +154,10 @@ for filestuff in data:
                         distribution = weights.WeightedECDF(allvalues[:, ii], allweights)
                         myrowstuff = list(rowstuff)
                         myrowstuff[rownames.index('region')] = config['regionorder'][ii]
-                        writer.writerow(myrowstuff + list(distribution.inverse(evalqvals)))
+                        writer.writerow(myrowstuff + list(distribution.inverse(encoded_evalqvals)))
                 else:
                     distribution = weights.WeightedECDF(allvalues, allweights)
-                    writer.writerow(list(rowstuff) + list(distribution.inverse(evalqvals)))
+                    writer.writerow(list(rowstuff) + list(distribution.inverse(encoded_evalqvals)))
             elif output_format == 'valuescsv':
                 for ii in range(len(allvalues)):
                     if isinstance(allvalues[ii], list) or isinstance(allvalues[ii], np.ndarray):

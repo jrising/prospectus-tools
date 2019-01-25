@@ -83,9 +83,10 @@ this to 'no'.
 
 # Outputing results
 
-## `evalqvals` (default: [.17, .5, .83])
+## `evalqvals` (default: ['mean', .17, .5, .83])
 
-The quantiles to report when output-format is edfcsv.
+The quantiles to report when output-format is edfcsv.  All values must
+be between 0 and 1, or may be the string "mean".
 
 ## `output-format` (default: `edfcsv`)
 

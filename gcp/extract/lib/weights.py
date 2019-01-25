@@ -97,8 +97,15 @@ class WeightedECDF(StepFunction):
         # Special case with identical weights
         if .5 in pp and np.all(np.array(self.weights) == self.weights[0]):
             results[pp.index(.5)] = np.median(self.values)
+        if 2 in pp: # Calculate mean
+            results[pp.index(2)] = np.average(self.values, weights=self.weights)
 
         return results
+
+    @staticmethod
+    def encode_evalqvals(evalqvals):
+        encoder = {'mean': 2}
+        return map(lambda p: p if isinstance(p, float) else encoder[p])
 
 if __name__ == '__main__':
     import sys
