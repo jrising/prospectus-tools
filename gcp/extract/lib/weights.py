@@ -105,7 +105,7 @@ class WeightedECDF(StepFunction):
     @staticmethod
     def encode_evalqvals(evalqvals):
         encoder = {'mean': 2}
-        return map(lambda p: p if isinstance(p, float) else encoder[p])
+        return map(lambda p: p if isinstance(p, float) else encoder[p], pp)
 
 if __name__ == '__main__':
     import sys
