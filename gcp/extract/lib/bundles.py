@@ -26,6 +26,8 @@ import configs
 deltamethod_vcv = None
 
 def read(filepath, column='rebased', deltamethod=False):
+    """If deltamethod is True, treat as a deltamethod file."""
+    
     global deltamethod_vcv
 
     try:
@@ -68,7 +70,7 @@ def iterate_regions(filepath, column, config={}):
         years, regions, data2 = read(filepath, 'costs_ub', config.get('deltamethod', None))
         data = ((data1 + data2) / 2) / 1e5
 
-    if deltamethod_vcv is not None:
+    if deltamethod_vcv is not None and not config.get('deltamethod', False):
         ## Inferred that these were deltamethod files
         config['deltamethod'] = True
     config['regionorder'] = list(regions)

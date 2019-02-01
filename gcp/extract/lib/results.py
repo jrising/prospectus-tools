@@ -86,3 +86,69 @@ def directory_contains(targetdir, oneof):
             return True
 
     return False
+
+def sum_into_data(root, basenames, config, transforms, vectransforms):
+    data = {} # { filestuff => { rowstuff => { batch-gcm-iam => value } } }
+
+    observations = 0
+    if config.get('verbose', False):
+        message_on_none = "No valid target directories found"
+    else:
+        message_on_none = "No valid target directories found; try --verbose"
+
+    for batch, rcp, gcm, iam, ssp, targetdir in configs.iterate_valid_targets(root, config, basenames):
+        message_on_none = "No valid results sets found within directories."
+        print targetdir
+
+        # Ensure that all basenames are accounted for
+        foundall = True
+        for basename in basenames:
+            if basename + '.nc4' not in os.listdir(targetdir):
+                foundall = False
+                break
+        if not foundall:
+            continue
+    
+    # Extract the values
+    for ii in range(len(basenames)):
+        try:
+            for region, years, values in bundles.iterate_regions(os.path.join(targetdir, basenames[ii] + '.nc4'), columns[ii], config):
+                if 'region' in config.get('file-organize', []) and 'year' not in config.get('file-organize', []) and output_format == 'valuescsv':
+                    values = vectransforms[ii](values)
+                    filestuff, rowstuff = configs.csv_organize(rcp, ssp, region, 'all', config)
+                    if ii == 0:
+                        results.collect_in_dictionaries(data, values, filestuff, rowstuff, (batch, gcm, iam))
+                    else:
+                        data[filestuff][rowstuff][(batch, gcm, iam)] += values
+                    observations += 1
+                    continue
+                
+                for year, value in bundles.iterate_values(years, values, config):
+                    if region == 'all':
+                        value = vectransforms[ii](value)
+                    else:
+                        value = transforms[ii](value)
+                    filestuff, rowstuff = configs.csv_organize(rcp, ssp, region, year, config)
+                    if ii == 0:
+                        results.collect_in_dictionaries(data, value, filestuff, rowstuff, (batch, gcm, iam))
+                    else:
+                        data[filestuff][rowstuff][(batch, gcm, iam)] += value
+                    observations += 1
+        except:
+            print "Failed to read " + os.path.join(targetdir, basenames[ii] + '.nc4')
+            traceback.print_exc()
+
+    print "Observations:", observations
+    if observations == 0:
+        print message_on_none
+
+    return data
+
+def deltamethod_variance(value):
+    if value.ndim == 1:
+        return bundles.deltamethod_vcv.dot(value).dot(value)
+    else:
+        combined = zeros((value.shape[1]))
+        for ii in range(value.shape[1]):
+            combined[ii] = bundles.deltamethod_vcv.dot(value[:, ii]).dot(value[:, ii])
+        return combined

@@ -32,6 +32,14 @@ A suffix on the filnames produced.  For example, if a default filename would be 
 
 Calculate values over the Monte Carlo results?
 
+## `deltamethod` (options: yes, no, or a deltamethod root directory)
+
+If deltamethod is yes, the directory is taken to be a directory of
+deltamethod variances; if it's a directory, a parallel deltamethod
+run is performed, where the directory structure is taken to be
+parallel to the normal results structure, and the variances there are
+used to produce a full distribution over results.
+
 # Year handling
 
 ## `yearsets` (options: yes, no, or list of start-end tuples)
