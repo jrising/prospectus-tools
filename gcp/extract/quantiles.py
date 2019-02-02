@@ -168,8 +168,10 @@ for filestuff in data:
                                 writer.writerow(row)
                             continue
                         
-                        for xx in allvalues[ii]:
-                            writer.writerow(list(rowstuff) + allmontevales[ii] + [xx, allweights[ii]])
+                        for jj in range(len(allvalues[ii])):
+                            myrowstuff = list(rowstuff)
+                            myrowstuff[rownames.index('region')] = config['regionorder'][jj]
+                            writer.writerow(myrowstuff + allmontevales[ii] + [allvalues[ii][jj], allweights[ii]])
                     else:
                         writer.writerow(list(rowstuff) + allmontevales[ii] + [allvalues[ii], allweights[ii]])
 
