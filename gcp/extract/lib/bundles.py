@@ -73,6 +73,20 @@ def iterate_regions(filepath, column, config={}):
     if deltamethod_vcv is not None and not config.get('deltamethod', False):
         ## Inferred that these were deltamethod files
         config['deltamethod'] = True
+
+    if config.get('multiimpact_vcv', None) is not None:
+        assert isinstance(config['multiimpact_vcv'], np.ndarray)
+        # Extend data to conform to multiimpact_vcv
+        foundindex = None
+        for ii in range(config['multiimpact_vcv'].size[0] - deltamethod_vcv.size[0] + 1):
+            if np.all(deltamethod_vcv == config['multiimpact_vcv'][ii:(ii+deltamethod_vcv.size[0]), ii:(ii+deltamethod_vcv.size[1])]):
+                foundindex = ii
+                break
+        assert foundindex is not None, "Cannot find the VCV for " + filepath + " within the master VCV."
+        newdata = np.zeros(tuple([config['multiimpact_vcv'].size[0]] + data.size[1:]))
+        newdata[foundindex:(foundindex + deltamethod_vcv.size[0]),:,:] = data
+        data = newdata
+        
     config['regionorder'] = list(regions)
 
     if configs.is_allregions(config):
