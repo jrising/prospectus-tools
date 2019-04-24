@@ -31,7 +31,7 @@ def get_weights(rcp):
 def get_weights_april2016(rcp):
     weights = {}
 
-    with open('/shares/gcp/climate/BCSD/SMME/SMME-weights/' + rcp + '_2090_SMME_edited_for_April_2016.tsv', 'rU') as tsvfp:
+    with open('/shares/gcp/climate/BCSD/SMME/SMME-weights/' + rcp + '_2090_SMME_Arg_April2019.tsv', 'rU') as tsvfp:
         reader = csv.reader(tsvfp, delimiter='\t')
         header = reader.next()
         for row in reader:
@@ -47,7 +47,7 @@ def get_weights_april2016(rcp):
 def get_weights_march2018(rcp):
     weights = {}
 
-    with open('/shares/gcp/climate/BCSD/SMME/SMME-weights/' + rcp + '_SMME_weights.tsv', 'rU') as tsvfp:
+    with open('/shares/gcp/climate/BCSD/SMME/SMME-weights/' + rcp + '_2090_SMME_Arg_April2019.tsv', 'rU') as tsvfp:
         reader = csv.reader(tsvfp, delimiter='\t')
         header = reader.next()
         for row in reader:
