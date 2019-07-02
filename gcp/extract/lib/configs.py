@@ -37,6 +37,17 @@ def read_config(filename):
         config = yaml.load(fp)
         return config
 
+def handle_multiimpact_vcv(config):
+    if 'multiimpact_vcv' in config and config['multiimpact_vcv'] is not None:
+        multiimpact_vcv = []
+        with open(config['multiimpact_vcv'], 'r') as fp:
+            reader = csv.reader(fp)
+            for row in reader:
+                multiimpact_vcv.append(map(float, row))
+        config['multiimpact_vcv'] = np.array(multiimpact_vcv)
+    else:
+        config['multiimpact_vcv'] = None
+    
 def iterate_valid_targets(root, config, impacts=None, verbose=True):
     verbose = verbose or config.get('verbose', False)
 

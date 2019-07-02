@@ -23,6 +23,7 @@ import numpy as np
 from lib import results, bundles, weights, weights_vcv, configs
 
 config, argv = configs.consume_config()
+configs.handle_multiimpact_vcv(config)
 
 do_gcmweights = config.get('do-gcmweights', True)
 evalqvals = config.get('evalqvals', [.17, .5, .83])

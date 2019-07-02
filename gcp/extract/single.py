@@ -13,6 +13,7 @@ import sys, csv
 from lib import bundles, configs
 
 config, argv = configs.consume_config()
+configs.handle_multiimpact_vcv(config)
 columns, basenames, transforms, vectransforms = configs.interpret_filenames(argv, config)
 
 data = {} # {region => { year => value }}
@@ -39,8 +40,15 @@ for region in data:
     if region == 'all':
         for rr in range(len(config['regionorder'])):
             for year in data[region]:
-                value = bundles.deltamethod_vcv.dot(data[region][year][:, rr]).dot(data[region][year][:, rr])
+                if bundles.deltamethod_vcv is not None:
+                    value = bundles.deltamethod_vcv.dot(data[region][year][:, rr]).dot(data[region][year][:, rr])
+                else:
+                    value = data[region][year][rr]
                 writer.writerow([config['regionorder'][rr], year, value])
     else:
         for year in data[region]:
-            writer.writerow([region, year, data[region][year][rr]])
+            if bundles.deltamethod_vcv is not None:
+                value = bundles.deltamethod_vcv.dot(data[region][year]).dot(data[region][year])
+            else:
+                value = data[region][year][rr]
+            writer.writerow([region, year, value])
