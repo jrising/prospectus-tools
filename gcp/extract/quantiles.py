@@ -14,7 +14,8 @@ Supported configuration options:
 - deltamethod (default: `no`) -- otherwise, result-root for deltamethod
 - file-organize (default: rcp, ssp)
 - do-gcmweights (default: true)
-- evalqvals (default: [.17, .5, .83])
+- evalqvals (default: ['mean', .17, .5, .83])
+- ignore-missing (default: no)
 """
 
 import os, sys, csv, traceback, yaml
@@ -26,7 +27,7 @@ config, argv = configs.consume_config()
 configs.handle_multiimpact_vcv(config)
 
 do_gcmweights = config.get('do-gcmweights', True)
-evalqvals = config.get('evalqvals', [.17, .5, .83])
+evalqvals = config.get('evalqvals', ['mean', .17, .5, .83])
 output_format = config.get('output-format', 'edfcsv')
 
 columns, basenames, transforms, vectransforms = configs.interpret_filenames(argv, config)
@@ -44,10 +45,12 @@ for filestuff in data:
         rownames = configs.csv_rownames(config)
 
         if output_format == 'edfcsv':
-            writer.writerow(rownames + map(lambda q: 'q' + str(int(q * 100)), evalqvals))
+            writer.writerow(rownames + map(lambda q: q if isinstance(q, str) else 'q' + str(int(q * 100)), evalqvals))
+            encoded_evalqvals = weights.WeightedECDF.encode_evalqvals(evalqvals)
         elif output_format == 'valuescsv':
             writer.writerow(rownames + ['batch', 'gcm', 'iam', 'value', 'weight'])
 
+            
         for rowstuff in configs.csv_sorted(data[filestuff].keys(), config):
             print "Outputing row: " + str(rowstuff)
             if do_gcmweights:
@@ -93,17 +96,17 @@ for filestuff in data:
                         if configs.is_parallel_deltamethod(config):
                             distribution = weights_vcv.WeightedGMCDF(allvalues[:, ii], allvariances[:, ii], allweights)
                         else:
-                            distribution = weights.WeightedECDF(allvalues[:, ii], allweights)
+                            distribution = weights.WeightedECDF(allvalues[:, ii], allweights, ignore_missing=config.get('ignore-missing', False))
                         myrowstuff = list(rowstuff)
                         myrowstuff[rownames.index('region')] = config['regionorder'][ii]
-                        writer.writerow(myrowstuff + list(distribution.inverse(evalqvals)))
+                        writer.writerow(myrowstuff + list(distribution.inverse(encoded_evalqvals)))
                 else:
                     if configs.is_parallel_deltamethod(config):
                         distribution = weights_vcv.WeightedGMCDF(allvalues, allvariances, allweights)
                     else:
-                        distribution = weights.WeightedECDF(allvalues, allweights)
+                        distribution = weights.WeightedECDF(allvalues, allweights, ignore_missing=config.get('ignore-missing', False))
                         
-                    writer.writerow(list(rowstuff) + list(distribution.inverse(evalqvals)))
+                    writer.writerow(list(rowstuff) + list(distribution.inverse(encoded_evalqvals)))
             elif output_format == 'valuescsv':
                 for ii in range(len(allvalues)):
                     if isinstance(allvalues[ii], list) or isinstance(allvalues[ii], np.ndarray):
@@ -114,8 +117,10 @@ for filestuff in data:
                                 writer.writerow(row)
                             continue
                         
-                        for xx in allvalues[ii]:
-                            writer.writerow(list(rowstuff) + allmontevales[ii] + [xx, allweights[ii]])
+                        for jj in range(len(allvalues[ii])):
+                            myrowstuff = list(rowstuff)
+                            myrowstuff[rownames.index('region')] = config['regionorder'][jj]
+                            writer.writerow(myrowstuff + allmontevales[ii] + [allvalues[ii][jj], allweights[ii]])
                     else:
                         writer.writerow(list(rowstuff) + allmontevales[ii] + [allvalues[ii], allweights[ii]])
 

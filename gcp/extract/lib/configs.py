@@ -55,18 +55,25 @@ def iterate_valid_targets(root, config, impacts=None, verbose=True):
     do_rcp_only = config.get('only-rcp', None)
     do_iam_only = config.get('only-iam', None)
     do_targetsubdirs = config.get('targetsubdirs', None)
+    do_batchdir = config.get('batchdir', 'median')
     checks = config.get('checks', None)
+    dirtree = config.get('dirtree', 'normal')
 
     allmodels = config['only-models'] if config.get('only-models', 'all') != 'all' else None
 
-    if do_targetsubdirs:
+    if dirtree == 'climate-only':
+        def get_iterator():
+            for alldirs in results.recurse_directories(root, 2):
+                yield ['pest', alldirs[0], alldirs[1], 'NA', 'NA', alldirs[2]]
+        iterator = get_iterator()
+    elif do_targetsubdirs:
         iterator = results.iterate_targetdirs(root, do_targetsubdirs)
     elif do_montecarlo == 'both':
         iterator = results.iterate_both(root)        
     elif do_montecarlo:
         iterator = results.iterate_montecarlo(root)
     else:
-        iterator = results.iterate_batch(root, 'median')
+        iterator = results.iterate_batch(root, do_batchdir)
         # Logic for a given directory
         #if root[-1] == '/':
         #    root = root[0:-1]

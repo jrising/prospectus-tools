@@ -89,11 +89,17 @@ according to the weights in the ACP?  If you want to produce
 unweighted results or use models that are not in the ACP weights, set
 this to 'no'.
 
+## `ignore-missing` (default: `no`)
+
+When computing quantiles and summary statistics, should missing (NaN)
+values be dropped?
+
 # Outputing results
 
-## `evalqvals` (default: [.17, .5, .83])
+## `evalqvals` (default: ['mean', .17, .5, .83])
 
-The quantiles to report when output-format is edfcsv.
+The quantiles to report when output-format is edfcsv.  All values must
+be between 0 and 1, or may be the string "mean".
 
 ## `output-format` (default: `edfcsv`)
 
