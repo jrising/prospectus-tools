@@ -14,6 +14,7 @@ Supported configuration options:
 - file-organize (default: rcp, ssp)
 - do-gcmweights (default: true)
 - evalqvals (default: ['mean', .17, .5, .83])
+- ignore-missing (default: no)
 """
 
 import os, sys, csv, traceback, yaml
@@ -85,7 +86,7 @@ for batch, rcp, gcm, iam, ssp, targetdir in configs.iterate_valid_targets(config
                         data[filestuff][rowstuff][(batch, gcm, iam)] += values
                     observations += 1
                     continue
-                
+
                 for year, value in bundles.iterate_values(years, values, config):
                     if region == 'all':
                         value = vectransforms[ii](value)
@@ -151,12 +152,12 @@ for filestuff in data:
                     assert 'all' in rowstuff
                     allvalues = np.array(allvalues)
                     for ii in range(allvalues.shape[1]):
-                        distribution = weights.WeightedECDF(allvalues[:, ii], allweights)
+                        distribution = weights.WeightedECDF(allvalues[:, ii], allweights, ignore_missing=config.get('ignore-missing', False))
                         myrowstuff = list(rowstuff)
                         myrowstuff[rownames.index('region')] = config['regionorder'][ii]
                         writer.writerow(myrowstuff + list(distribution.inverse(encoded_evalqvals)))
                 else:
-                    distribution = weights.WeightedECDF(allvalues, allweights)
+                    distribution = weights.WeightedECDF(allvalues, allweights, ignore_missing=config.get('ignore-missing', False))
                     writer.writerow(list(rowstuff) + list(distribution.inverse(encoded_evalqvals)))
             elif output_format == 'valuescsv':
                 for ii in range(len(allvalues)):

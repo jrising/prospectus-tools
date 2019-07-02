@@ -81,6 +81,11 @@ according to the weights in the ACP?  If you want to produce
 unweighted results or use models that are not in the ACP weights, set
 this to 'no'.
 
+## `ignore-missing` (default: `no`)
+
+When computing quantiles and summary statistics, should missing (NaN)
+values be dropped?
+
 # Outputing results
 
 ## `evalqvals` (default: ['mean', .17, .5, .83])

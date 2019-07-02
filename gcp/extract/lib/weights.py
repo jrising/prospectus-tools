@@ -71,8 +71,17 @@ def weighted_values(values, weights):
     return (values_list, weights_list)
 
 class WeightedECDF(StepFunction):
-    def __init__(self, values, weights):
+    def __init__(self, values, weights, ignore_missing=False):
         """Takes a list of values and weights"""
+        if ignore_missing:
+            values = np.array(values)
+            weights = np.array(weights)
+            weights[np.isnan(values)] = 0
+            values[np.isnan(values)] = 0
+            if np.sum(weights) == 0 and len(weights) > 0:
+                weights[0] = 1
+                values[0] = np.nan
+        
         self.expected = sum(np.array(values) * np.array(weights)) / sum(weights)
 
         order = sorted(range(len(values)), key=lambda ii: values[ii])
@@ -99,12 +108,15 @@ class WeightedECDF(StepFunction):
             results[pp.index(.5)] = np.median(self.values)
         if 2 in pp: # Calculate mean
             results[pp.index(2)] = np.average(self.values, weights=self.weights)
+        if 3 in pp:
+            mu = np.average(self.values, weights=self.weights)
+            results[pp.index(3)] = np.sqrt(np.sum(self.weights * (self.values - mu)**2) / np.sum(self.weights))
 
         return results
 
     @staticmethod
     def encode_evalqvals(evalqvals):
-        encoder = {'mean': 2}
+        encoder = {'mean': 2, 'sdev': 3}
         return map(lambda p: p if isinstance(p, float) else encoder[p], evalqvals)
 
 if __name__ == '__main__':
