@@ -18,7 +18,7 @@ Supported configuration options:
 - ignore-missing (default: no)
 """
 
-import os, sys, csv, traceback, yaml
+import os, sys, csv, traceback, yaml, copy
 import numpy as np
 
 from lib import results, bundles, weights, weights_vcv, configs
@@ -33,10 +33,12 @@ output_format = config.get('output-format', 'edfcsv')
 columns, basenames, transforms, vectransforms = configs.interpret_filenames(argv, config)
 
 # Collect all available results
-data = results.sum_info_data(config['results-root'], basenames, config, transforms, vectransforms)
+data = results.sum_into_data(config['results-root'], basenames, columns, config, transforms, vectransforms)
 if configs.is_parallel_deltamethod(config):
     # corresponds to each value in data, if doing parallel deltamethod
-    parallel_deltamethod_data = results.sum_info_data(config['deltamethod'], basenames, config, transforms, vectransforms)
+    config2 = copy.copy(config)
+    config2['deltamethod'] = True
+    parallel_deltamethod_data = results.sum_into_data(config['deltamethod'], basenames, columns, config2, transforms, vectransforms)
 
 for filestuff in data:
     print "Creating file: " + str(filestuff)
@@ -87,7 +89,7 @@ for filestuff in data:
                 continue
 
             if output_format == 'edfcsv':
-                if region == 'all': # still set from before
+                if configs.is_allregions(config):
                     assert 'all' in rowstuff
                     allvalues = np.array(allvalues)
                     if configs.is_parallel_deltamethod(config):

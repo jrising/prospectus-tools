@@ -63,11 +63,12 @@ def read(filepath, column='rebased', deltamethod=False):
     return years, regions, data
 
 def iterate_regions(filepath, column, config={}):
+    do_deltamethod = False if configs.is_parallel_deltamethod(config) else config.get('deltamethod', None)
     if column is not None or 'costs' not in filepath:
-        years, regions, data = read(filepath, column if column is not None else 'rebased', config.get('deltamethod', None))
+        years, regions, data = read(filepath, column if column is not None else 'rebased', do_deltamethod)
     else:
-        years, regions, data1 = read(filepath, 'costs_lb', config.get('deltamethod', None))
-        years, regions, data2 = read(filepath, 'costs_ub', config.get('deltamethod', None))
+        years, regions, data1 = read(filepath, 'costs_lb', do_deltamethod)
+        years, regions, data2 = read(filepath, 'costs_ub', do_deltamethod)
         data = ((data1 + data2) / 2) / 1e5
 
     if deltamethod_vcv is not None and not config.get('deltamethod', False):
@@ -98,7 +99,7 @@ def iterate_regions(filepath, column, config={}):
         if region == 'global':
             region = ''
         ii = regions.index(region)
-        if config.get('deltamethod', False):
+        if config.get('deltamethod', False) and not configs.is_parallel_deltamethod(config):
             yield regions[ii], years, data[:, :, ii]
         else:
             yield regions[ii], years, data[:, ii]
@@ -130,7 +131,7 @@ def iterate_values(years, values, config={}):
 
     years = list(years)
     for year in configs.get_years(config, years):
-        if config.get('deltamethod', False):
+        if config.get('deltamethod', False) and not configs.is_parallel_deltamethod(config):
             if values.ndim == 2:
                 yield year, values[:, years.index(year)]
             else:

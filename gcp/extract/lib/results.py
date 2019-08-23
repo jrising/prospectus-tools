@@ -18,7 +18,9 @@ __status__ = "Production"
 __version__ = "$Revision$"
 # $Source$
 
-import os, csv, glob
+import os, csv, glob, traceback
+import numpy as np
+import configs, bundles
 
 rcps = ['rcp45', 'rcp85']
 
@@ -87,7 +89,7 @@ def directory_contains(targetdir, oneof):
 
     return False
 
-def sum_into_data(root, basenames, config, transforms, vectransforms):
+def sum_into_data(root, basenames, columns, config, transforms, vectransforms):
     data = {} # { filestuff => { rowstuff => { batch-gcm-iam => value } } }
 
     observations = 0
@@ -109,34 +111,34 @@ def sum_into_data(root, basenames, config, transforms, vectransforms):
         if not foundall:
             continue
     
-    # Extract the values
-    for ii in range(len(basenames)):
-        try:
-            for region, years, values in bundles.iterate_regions(os.path.join(targetdir, basenames[ii] + '.nc4'), columns[ii], config):
-                if 'region' in config.get('file-organize', []) and 'year' not in config.get('file-organize', []) and output_format == 'valuescsv':
-                    values = vectransforms[ii](values)
-                    filestuff, rowstuff = configs.csv_organize(rcp, ssp, region, 'all', config)
-                    if ii == 0:
-                        results.collect_in_dictionaries(data, values, filestuff, rowstuff, (batch, gcm, iam))
-                    else:
-                        data[filestuff][rowstuff][(batch, gcm, iam)] += values
-                    observations += 1
-                    continue
+        # Extract the values
+        for ii in range(len(basenames)):
+            try:
+                for region, years, values in bundles.iterate_regions(os.path.join(targetdir, basenames[ii] + '.nc4'), columns[ii], config):
+                    if 'region' in config.get('file-organize', []) and 'year' not in config.get('file-organize', []) and output_format == 'valuescsv':
+                        values = vectransforms[ii](values)
+                        filestuff, rowstuff = configs.csv_organize(rcp, ssp, region, 'all', config)
+                        if ii == 0:
+                            collect_in_dictionaries(data, values, filestuff, rowstuff, (batch, gcm, iam))
+                        else:
+                            data[filestuff][rowstuff][(batch, gcm, iam)] += values
+                        observations += 1
+                        continue
                 
-                for year, value in bundles.iterate_values(years, values, config):
-                    if region == 'all':
-                        value = vectransforms[ii](value)
-                    else:
-                        value = transforms[ii](value)
-                    filestuff, rowstuff = configs.csv_organize(rcp, ssp, region, year, config)
-                    if ii == 0:
-                        results.collect_in_dictionaries(data, value, filestuff, rowstuff, (batch, gcm, iam))
-                    else:
-                        data[filestuff][rowstuff][(batch, gcm, iam)] += value
-                    observations += 1
-        except:
-            print "Failed to read " + os.path.join(targetdir, basenames[ii] + '.nc4')
-            traceback.print_exc()
+                    for year, value in bundles.iterate_values(years, values, config):
+                        if region == 'all':
+                            value = vectransforms[ii](value)
+                        else:
+                            value = transforms[ii](value)
+                        filestuff, rowstuff = configs.csv_organize(rcp, ssp, region, year, config)
+                        if ii == 0:
+                            collect_in_dictionaries(data, value, filestuff, rowstuff, (batch, gcm, iam))
+                        else:
+                            data[filestuff][rowstuff][(batch, gcm, iam)] += value
+                        observations += 1
+            except:
+                print "Failed to read " + os.path.join(targetdir, basenames[ii] + '.nc4')
+                traceback.print_exc()
 
     print "Observations:", observations
     if observations == 0:
@@ -148,7 +150,7 @@ def deltamethod_variance(value):
     if value.ndim == 1:
         return bundles.deltamethod_vcv.dot(value).dot(value)
     else:
-        combined = zeros((value.shape[1]))
+        combined = np.zeros((value.shape[1]))
         for ii in range(value.shape[1]):
             combined[ii] = bundles.deltamethod_vcv.dot(value[:, ii]).dot(value[:, ii])
         return combined
