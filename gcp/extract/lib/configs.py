@@ -37,8 +37,18 @@ def read_config(filename):
         config = yaml.load(fp)
         return config
 
-def iterate_valid_targets(config, impacts=None, verbose=True):
-    root = config['results-root']
+def handle_multiimpact_vcv(config):
+    if 'multiimpact_vcv' in config and config['multiimpact_vcv'] is not None:
+        multiimpact_vcv = []
+        with open(config['multiimpact_vcv'], 'r') as fp:
+            reader = csv.reader(fp)
+            for row in reader:
+                multiimpact_vcv.append(map(float, row))
+        config['multiimpact_vcv'] = np.array(multiimpact_vcv)
+    else:
+        config['multiimpact_vcv'] = None
+    
+def iterate_valid_targets(root, config, impacts=None, verbose=True):
     verbose = verbose or config.get('verbose', False)
 
     do_montecarlo = config.get('do-montecarlo', False)
@@ -90,12 +100,23 @@ def iterate_valid_targets(config, impacts=None, verbose=True):
             continue
 
         if impacts is None:
-            observations += 1
-            yield batch, rcp, model, iam, ssp, targetdir
+            if is_parallel_deltamethod(config):
+                if os.path.isdir(get_deltamethod_path(targetdir, config)):
+                    observations += 1
+                    yield batch, rcp, model, iam, ssp, targetdir
+                elif verbose:
+                    print "deltamethod", get_deltamethod_path(targetdir, config), "missing"
+            else:
+                observations += 1
+                yield batch, rcp, model, iam, ssp, targetdir
         else:
             # Check that at least one of the impacts is here
             for impact in impacts:
                 if impact + ".nc4" in os.listdir(targetdir):
+                    if is_parallel_deltamethod(config):
+                        if not os.path.isfile(get_deltamethod_path(os.path.join(targetdir, impact + ".nc4"), config)):
+                            print "deltamethod", get_deltamethod_path(os.path.join(targetdir, impact + ".nc4"), config), "missing"
+                            continue
                     observations += 1
                     yield batch, rcp, model, iam, ssp, targetdir
                     break
@@ -103,6 +124,39 @@ def iterate_valid_targets(config, impacts=None, verbose=True):
     if observations == 0:
         print message_on_none
 
+def is_parallel_deltamethod(config):
+    return isinstance(config.get('deltamethod', False), str)
+        
+def get_deltamethod_path(path, config):
+    return path.replace(config['results-root'], config['deltamethod'])
+
+def interpret_filenames(argv, config):
+    columns = []
+    basenames = []
+    transforms = []
+    vectransforms = []
+    for basename in argv:
+        if basename[0] == '-':
+            basename = basename[1:]
+            assert basename, "Error: Cannot interpret a single dash."
+            transforms.append(lambda x: -x)
+            vectransforms.append(lambda x: -x)
+        else:
+            transforms.append(lambda x: x)
+            vectransforms.append(lambda x: x)
+        if ':' in basename:
+            columns.append(basename.split(':')[1])
+            basename = basename.split(':')[0]
+            if basename == '':
+                assert len(basenames) > 0, "Must have a previous basename to duplicate."
+                basename = basenames[-1]
+        else:
+            columns.append(config.get('column', None))
+            
+        basenames.append(basename)
+
+    return columns, basenames, transforms, vectransforms
+        
 ## Plural handling
 
 def is_allregions(config):

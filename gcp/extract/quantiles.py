@@ -11,100 +11,34 @@ Supported configuration options:
 - do-montecarlo
 - only-rcp
 - only-models (default: `all`)
+- deltamethod (default: `no`) -- otherwise, result-root for deltamethod
 - file-organize (default: rcp, ssp)
 - do-gcmweights (default: true)
 - evalqvals (default: ['mean', .17, .5, .83])
 - ignore-missing (default: no)
 """
 
-import os, sys, csv, traceback, yaml
+import os, sys, csv, traceback, yaml, copy
 import numpy as np
 
-from lib import results, bundles, weights, configs
+from lib import results, bundles, weights, weights_vcv, configs
 
 config, argv = configs.consume_config()
+configs.handle_multiimpact_vcv(config)
 
 do_gcmweights = config.get('do-gcmweights', True)
 evalqvals = config.get('evalqvals', ['mean', .17, .5, .83])
 output_format = config.get('output-format', 'edfcsv')
 
-columns = []
-basenames = []
-transforms = []
-vectransforms = []
-for basename in argv:
-    if basename[0] == '-':
-        basename = basename[1:]
-        transforms.append(lambda x: -x)
-        vectransforms.append(lambda x: -x)
-    else:
-        transforms.append(lambda x: x)
-        vectransforms.append(lambda x: x)
-    if ':' in basename:
-        columns.append(basename.split(':')[1])
-        basename = basename.split(':')[0]
-        if basename == '':
-            assert len(basenames) > 0, "Must have a previous basename to duplicate."
-            basename = basenames[-1]
-    else:
-        columns.append(config.get('column', None))
-            
-    basenames.append(basename)
+columns, basenames, transforms, vectransforms = configs.interpret_filenames(argv, config)
 
 # Collect all available results
-data = {} # { filestuff => { rowstuff => { batch-gcm-iam => value } } }
-
-observations = 0
-if config.get('verbose', False):
-    message_on_none = "No valid target directories found"
-else:
-    message_on_none = "No valid target directories found; try --verbose"
-
-for batch, rcp, gcm, iam, ssp, targetdir in configs.iterate_valid_targets(config, basenames):
-    message_on_none = "No valid results sets found within directories."
-    print targetdir
-
-    # Ensure that all basenames are accounted for
-    foundall = True
-    for basename in basenames:
-        if basename + '.nc4' not in os.listdir(targetdir):
-            foundall = False
-            break
-    if not foundall:
-        continue
-    
-    # Extract the values
-    for ii in range(len(basenames)):
-        try:
-            for region, years, values in bundles.iterate_regions(os.path.join(targetdir, basenames[ii] + '.nc4'), columns[ii], config):
-                if 'region' in config.get('file-organize', []) and 'year' not in config.get('file-organize', []) and output_format == 'valuescsv':
-                    values = vectransforms[ii](values)
-                    filestuff, rowstuff = configs.csv_organize(rcp, ssp, region, 'all', config)
-                    if ii == 0:
-                        results.collect_in_dictionaries(data, values, filestuff, rowstuff, (batch, gcm, iam))
-                    else:
-                        data[filestuff][rowstuff][(batch, gcm, iam)] += values
-                    observations += 1
-                    continue
-
-                for year, value in bundles.iterate_values(years, values, config):
-                    if region == 'all':
-                        value = vectransforms[ii](value)
-                    else:
-                        value = transforms[ii](value)
-                    filestuff, rowstuff = configs.csv_organize(rcp, ssp, region, year, config)
-                    if ii == 0:
-                        results.collect_in_dictionaries(data, value, filestuff, rowstuff, (batch, gcm, iam))
-                    else:
-                        data[filestuff][rowstuff][(batch, gcm, iam)] += value
-                    observations += 1
-        except:
-            print "Failed to read " + os.path.join(targetdir, basenames[ii] + '.nc4')
-            traceback.print_exc()
-
-print "Observations:", observations
-if observations == 0:
-    print message_on_none
+data = results.sum_into_data(config['results-root'], basenames, columns, config, transforms, vectransforms)
+if configs.is_parallel_deltamethod(config):
+    # corresponds to each value in data, if doing parallel deltamethod
+    config2 = copy.copy(config)
+    config2['deltamethod'] = True
+    parallel_deltamethod_data = results.sum_into_data(config['deltamethod'], basenames, columns, config2, transforms, vectransforms)
 
 for filestuff in data:
     print "Creating file: " + str(filestuff)
@@ -125,11 +59,15 @@ for filestuff in data:
                 model_weights = weights.get_weights(configs.csv_organized_rcp(filestuff, rowstuff, config))
 
             allvalues = []
+            allvariances = [] # only used for parallel deltamethod
             allweights = []
             allmontevales = []
 
             for batch, gcm, iam in data[filestuff][rowstuff]:
                 value = data[filestuff][rowstuff][(batch, gcm, iam)]
+                if config.get('deltamethod', False) == True:
+                    value = deltamethod_variance(value)
+                    
                 if do_gcmweights:
                     try:
                         weight = model_weights[gcm.lower()]
@@ -138,26 +76,38 @@ for filestuff in data:
                         weight = 0.
                 else:
                     weight = 1.
-                    
+
                 allvalues.append(value)
                 allweights.append(weight)
                 allmontevales.append([batch, gcm, iam])
 
+                if configs.is_parallel_deltamethod(config):
+                    allvariances.append(results.deltamethod_variance(parallel_deltamethod_data[filestuff][rowstuff][(batch, gcm, iam)]))
+                
             #print filestuff, rowstuff, allvalues
             if len(allvalues) == 0:
                 continue
 
             if output_format == 'edfcsv':
-                if region == 'all': # still set from before
+                if configs.is_allregions(config):
                     assert 'all' in rowstuff
                     allvalues = np.array(allvalues)
+                    if configs.is_parallel_deltamethod(config):
+                        allvariances = np.array(allvariances)
                     for ii in range(allvalues.shape[1]):
-                        distribution = weights.WeightedECDF(allvalues[:, ii], allweights, ignore_missing=config.get('ignore-missing', False))
+                        if configs.is_parallel_deltamethod(config):
+                            distribution = weights_vcv.WeightedGMCDF(allvalues[:, ii], allvariances[:, ii], allweights)
+                        else:
+                            distribution = weights.WeightedECDF(allvalues[:, ii], allweights, ignore_missing=config.get('ignore-missing', False))
                         myrowstuff = list(rowstuff)
                         myrowstuff[rownames.index('region')] = config['regionorder'][ii]
                         writer.writerow(myrowstuff + list(distribution.inverse(encoded_evalqvals)))
                 else:
-                    distribution = weights.WeightedECDF(allvalues, allweights, ignore_missing=config.get('ignore-missing', False))
+                    if configs.is_parallel_deltamethod(config):
+                        distribution = weights_vcv.WeightedGMCDF(allvalues, allvariances, allweights)
+                    else:
+                        distribution = weights.WeightedECDF(allvalues, allweights, ignore_missing=config.get('ignore-missing', False))
+                        
                     writer.writerow(list(rowstuff) + list(distribution.inverse(encoded_evalqvals)))
             elif output_format == 'valuescsv':
                 for ii in range(len(allvalues)):

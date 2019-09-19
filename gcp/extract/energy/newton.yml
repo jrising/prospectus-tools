@@ -1,0 +1,9 @@
+results-root: /shares/gcp/outputs/energy/impacts-blueghost/median_OTHERIND_other_energy_TINV_clim_income_spline_GMFD
+deltamethod: /shares/gcp/outputs/energy/impacts-blueghost/median_OTHERIND_other_energy_TINV_clim_income_spline_GMFD_dm
+output-dir: median_deltamethod
+file-organize: [rcp, ssp]
+do-montecarlo: no
+region: global
+column: rebased
+evalqvals: [0.05, 0.5, 0.95]
+output-format: edfcsv
