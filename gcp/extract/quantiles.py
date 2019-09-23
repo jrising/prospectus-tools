@@ -6,12 +6,12 @@ Supported configuration options:
 - yearsets (default: `no`)
 - years (default: `null`)
 - regions (default: `null`)
-- result-root
+- results-root
 - output-dir
 - do-montecarlo
 - only-rcp
 - only-models (default: `all`)
-- deltamethod (default: `no`) -- otherwise, result-root for deltamethod
+- deltamethod (default: `no`) -- otherwise, results root for deltamethod
 - file-organize (default: rcp, ssp)
 - do-gcmweights (default: true)
 - evalqvals (default: ['mean', .17, .5, .83])
