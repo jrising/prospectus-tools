@@ -76,6 +76,8 @@ def iterate_regions(filepath, column, config={}):
         config['deltamethod'] = True
 
     if config.get('multiimpact_vcv', None) is not None:
+        global multiimpact_vcv
+        
         assert isinstance(config['multiimpact_vcv'], np.ndarray)
         # Extend data to conform to multiimpact_vcv
         foundindex = None
@@ -87,6 +89,8 @@ def iterate_regions(filepath, column, config={}):
         newdata = np.zeros(tuple([config['multiimpact_vcv'].size[0]] + data.size[1:]))
         newdata[foundindex:(foundindex + deltamethod_vcv.size[0]),:,:] = data
         data = newdata
+
+        multiimpact_vcv = None # reset for next file
         
     config['regionorder'] = list(regions)
 
