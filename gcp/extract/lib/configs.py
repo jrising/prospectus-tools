@@ -1,7 +1,8 @@
 ## Helper functions for reading the configuration
 
 import sys, os, re
-import yaml
+import yaml, csv
+import numpy as np
 import results
 
 def consume_config():

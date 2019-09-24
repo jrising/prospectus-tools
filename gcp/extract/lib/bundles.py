@@ -63,6 +63,8 @@ def read(filepath, column='rebased', deltamethod=False):
     return years, regions, data
 
 def iterate_regions(filepath, column, config={}):
+    global deltamethod_vcv
+        
     do_deltamethod = False if configs.is_parallel_deltamethod(config) else config.get('deltamethod', None)
     if column is not None or 'costs' not in filepath:
         years, regions, data = read(filepath, column if column is not None else 'rebased', do_deltamethod)
@@ -75,22 +77,26 @@ def iterate_regions(filepath, column, config={}):
         ## Inferred that these were deltamethod files
         config['deltamethod'] = True
 
-    if config.get('multiimpact_vcv', None) is not None:
-        global multiimpact_vcv
-        
+    if config.get('multiimpact_vcv', None) is not None and deltamethod_vcv is not None:
         assert isinstance(config['multiimpact_vcv'], np.ndarray)
         # Extend data to conform to multiimpact_vcv
         foundindex = None
-        for ii in range(config['multiimpact_vcv'].size[0] - deltamethod_vcv.size[0] + 1):
-            if np.all(deltamethod_vcv == config['multiimpact_vcv'][ii:(ii+deltamethod_vcv.size[0]), ii:(ii+deltamethod_vcv.size[1])]):
+        for ii in range(config['multiimpact_vcv'].shape[0] - deltamethod_vcv.shape[0] + 1):
+            if np.allclose(deltamethod_vcv, config['multiimpact_vcv'][ii:(ii+deltamethod_vcv.shape[0]), ii:(ii+deltamethod_vcv.shape[1])]):
                 foundindex = ii
                 break
+        if foundindex is None:
+            print np.sum(np.abs(deltamethod_vcv - config['multiimpact_vcv'][:deltamethod_vcv.shape[0], :deltamethod_vcv.shape[1]]))
+            print np.sum(np.abs(deltamethod_vcv - config['multiimpact_vcv'][deltamethod_vcv.shape[0]:, deltamethod_vcv.shape[1]:]))
         assert foundindex is not None, "Cannot find the VCV for " + filepath + " within the master VCV."
-        newdata = np.zeros(tuple([config['multiimpact_vcv'].size[0]] + data.size[1:]))
-        newdata[foundindex:(foundindex + deltamethod_vcv.size[0]),:,:] = data
+        newdata = np.zeros(tuple([config['multiimpact_vcv'].shape[0]] + list(data.shape[1:])))
+        if len(data.shape) == 2:
+            newdata[foundindex:(foundindex + deltamethod_vcv.shape[0]),:] = data
+        else:
+            newdata[foundindex:(foundindex + deltamethod_vcv.shape[0]),:,:] = data
         data = newdata
 
-        multiimpact_vcv = None # reset for next file
+        deltamethod_vcv = None # reset for next file
         
     config['regionorder'] = list(regions)
 

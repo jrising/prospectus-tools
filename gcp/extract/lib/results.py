@@ -22,6 +22,7 @@ import os, csv, glob, traceback, re
 import numpy as np
 import configs, bundles
 
+debug = True
 rcps = ['rcp45', 'rcp85']
 
 def iterate_targetdirs(root, targetsubdirs):
@@ -182,6 +183,8 @@ def sum_into_data(root, basenames, columns, config, transforms, vectransforms):
             except:
                 print "Failed to read " + fullpath
                 traceback.print_exc()
+                if debug:
+                    exit()
 
     print "Observations:", observations
     if observations == 0:
