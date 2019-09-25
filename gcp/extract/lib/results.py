@@ -192,11 +192,16 @@ def sum_into_data(root, basenames, columns, config, transforms, vectransforms):
 
     return data
 
-def deltamethod_variance(value):
+def deltamethod_variance(value, config):
+    if config.get('multiimpact_vcv', None) is None:
+        deltamethod_vcv = bundles.deltamethod_vcv
+    else:
+        deltamethod_vcv = config['multiimpact_vcv']
+        
     if value.ndim == 1:
-        return bundles.deltamethod_vcv.dot(value).dot(value)
+        return deltamethod_vcv.dot(value).dot(value)
     else:
         combined = np.zeros((value.shape[1]))
         for ii in range(value.shape[1]):
-            combined[ii] = bundles.deltamethod_vcv.dot(value[:, ii]).dot(value[:, ii])
+            combined[ii] = deltamethod_vcv.dot(value[:, ii]).dot(value[:, ii])
         return combined

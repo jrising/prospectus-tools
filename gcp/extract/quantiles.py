@@ -66,7 +66,7 @@ for filestuff in data:
             for batch, gcm, iam in data[filestuff][rowstuff]:
                 value = data[filestuff][rowstuff][(batch, gcm, iam)]
                 if config.get('deltamethod', False) == True:
-                    value = deltamethod_variance(value)
+                    value = deltamethod_variance(value, config)
                     
                 if do_gcmweights:
                     try:
@@ -82,7 +82,7 @@ for filestuff in data:
                 allmontevales.append([batch, gcm, iam])
 
                 if configs.is_parallel_deltamethod(config):
-                    allvariances.append(results.deltamethod_variance(parallel_deltamethod_data[filestuff][rowstuff][(batch, gcm, iam)]))
+                    allvariances.append(results.deltamethod_variance(parallel_deltamethod_data[filestuff][rowstuff][(batch, gcm, iam)], config))
                 
             #print filestuff, rowstuff, allvalues
             if len(allvalues) == 0:
