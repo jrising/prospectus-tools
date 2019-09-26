@@ -25,9 +25,39 @@ import configs
 
 deltamethod_vcv = None
 
+
+def read_region(target_regions, *args, **kwargs):
+    """Snip-out target regions from nc4 file
+
+    Quick and dirty hax to reduce the size of data read in from netCDF files.
+    Keeps a memory leak in the module from blowing up the script. Not
+    the best way to handle this. This should not be in production code.
+
+    Parameters
+    ----------
+    target_regions : sequence of strs
+    *args :
+        Passed on to read().
+    **kwargs :
+        Passed on to read().
+
+    Returns
+    -------
+    years : array-like
+    regions : array-like
+    data : array-like
+    """
+    # Because someone's always tryin to ice-skate up hill
+    if isinstance(target_regions, str):
+        target_regions = [target_regions]
+
+    years, regions, data = read(*args, **kwargs)
+    regions_msk = np.isin(regions, target_regions)
+    return years, regions[regions_msk], data[..., regions_msk]
+
+
 def read(filepath, column='rebased', deltamethod=False):
     """If deltamethod is True, treat as a deltamethod file."""
-    
     global deltamethod_vcv
 
     try:
@@ -64,13 +94,14 @@ def read(filepath, column='rebased', deltamethod=False):
 
 def iterate_regions(filepath, column, config={}):
     global deltamethod_vcv
-        
+
+    target_regions = configs.get_regions(config)
     do_deltamethod = False if configs.is_parallel_deltamethod(config) else config.get('deltamethod', None)
     if column is not None or 'costs' not in filepath:
-        years, regions, data = read(filepath, column if column is not None else 'rebased', do_deltamethod)
+        years, regions, data = read_region(target_regions, filepath, column if column is not None else 'rebased', do_deltamethod)
     else:
-        years, regions, data1 = read(filepath, 'costs_lb', do_deltamethod)
-        years, regions, data2 = read(filepath, 'costs_ub', do_deltamethod)
+        years, regions, data1 = read_region(target_regions, filepath, 'costs_lb', do_deltamethod)
+        years, regions, data2 = read_region(target_regions, filepath, 'costs_ub', do_deltamethod)
         data = data2 / 1e5
 
     if deltamethod_vcv is not None and not config.get('deltamethod', False):
@@ -97,7 +128,7 @@ def iterate_regions(filepath, column, config={}):
         data = newdata
 
         deltamethod_vcv = None # reset for next file
-        
+
     config['regionorder'] = list(regions)
 
     if configs.is_allregions(config):
