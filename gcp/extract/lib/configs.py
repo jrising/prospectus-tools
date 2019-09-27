@@ -191,6 +191,9 @@ def get_regions(config, allregions=None):
     if allregions is None:
         allregions = []
 
+    if 'region' not in config.keys() and 'regions' not in config.keys():
+        return []
+
     if 'region' in config:
         return [config['region']]
 

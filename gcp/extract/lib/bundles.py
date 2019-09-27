@@ -31,11 +31,12 @@ def read_region(target_regions, *args, **kwargs):
 
     Quick and dirty hax to reduce the size of data read in from netCDF files.
     Keeps a memory leak in the module from blowing up the script. Not
-    the best way to handle this. This should not be in production code.
+    the best way to handle this.
 
     Parameters
     ----------
     target_regions : sequence of strs
+        Regions to extract. If empty list or 'all', extracts all regions.
     *args :
         Passed on to read().
     **kwargs :
@@ -53,6 +54,10 @@ def read_region(target_regions, *args, **kwargs):
 
     years, regions, data = read(*args, **kwargs)
     regions_msk = np.isin(regions, target_regions)
+
+    if target_regions == ['all'] or target_regions == []:
+        regions_msk[:] = True
+
     return years, regions[regions_msk], data[..., regions_msk]
 
 
