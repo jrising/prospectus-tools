@@ -66,7 +66,7 @@ for filestuff in data:
             for batch, gcm, iam in data[filestuff][rowstuff]:
                 value = data[filestuff][rowstuff][(batch, gcm, iam)]
                 if config.get('deltamethod', False) == True:
-                    value = deltamethod_variance(value)
+                    value = results.deltamethod_variance(value)
                     
                 if do_gcmweights:
                     try:
