@@ -115,7 +115,7 @@ def sum_into_data(root, basenames, columns, config, transforms, vectransforms):
         for ii in range(len(basenames)):
             try:
                 for region, years, values in bundles.iterate_regions(os.path.join(targetdir, basenames[ii] + '.nc4'), columns[ii], config):
-                    if 'region' in config.get('file-organize', []) and 'year' not in config.get('file-organize', []) and output_format == 'valuescsv':
+                    if 'region' in config.get('file-organize', []) and 'year' not in config.get('file-organize', []) and config.get('output-format', 'edfcsv') == 'valuescsv':
                         values = vectransforms[ii](values)
                         filestuff, rowstuff = configs.csv_organize(rcp, ssp, region, 'all', config)
                         if ii == 0:
@@ -124,7 +124,7 @@ def sum_into_data(root, basenames, columns, config, transforms, vectransforms):
                             data[filestuff][rowstuff][(batch, gcm, iam)] += values
                         observations += 1
                         continue
-                
+                    years_for_return = years                
                     for year, value in bundles.iterate_values(years, values, config):
                         if region == 'all':
                             value = vectransforms[ii](value)
@@ -139,12 +139,16 @@ def sum_into_data(root, basenames, columns, config, transforms, vectransforms):
             except:
                 print "Failed to read " + os.path.join(targetdir, basenames[ii] + '.nc4')
                 traceback.print_exc()
-
+            last_targetdir = targetdir
     print "Observations:", observations
     if observations == 0:
         print message_on_none
+    
+    do_deltamethod = False if configs.is_parallel_deltamethod(config) else config.get('deltamethod', None)
+    filepath = os.path.join(last_targetdir, basenames[0] + '.nc4')
+    years, regions, data_not = bundles.read(filepath = filepath, column = columns[0], deltamethod = do_deltamethod)
 
-    return data
+    return data, years
 
 def deltamethod_variance(value):
     if value.ndim == 1:

@@ -33,7 +33,7 @@ output_format = config.get('output-format', 'edfcsv')
 columns, basenames, transforms, vectransforms = configs.interpret_filenames(argv, config)
 
 # Collect all available results
-data = results.sum_into_data(config['results-root'], basenames, columns, config, transforms, vectransforms)
+data, years = results.sum_into_data(config['results-root'], basenames, columns, config, transforms, vectransforms)
 if configs.is_parallel_deltamethod(config):
     # corresponds to each value in data, if doing parallel deltamethod
     config2 = copy.copy(config)
