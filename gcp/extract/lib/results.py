@@ -18,10 +18,11 @@ __status__ = "Production"
 __version__ = "$Revision$"
 # $Source$
 
-import os, csv, glob, traceback
+import os, csv, glob, traceback, re
 import numpy as np
 import configs, bundles
 
+debug = True
 rcps = ['rcp45', 'rcp85']
 
 def iterate_targetdirs(root, targetsubdirs):
@@ -35,8 +36,21 @@ def iterate_targetdirs(root, targetsubdirs):
             chunks = targetsubdir.split('/')
             yield chunks + [os.path.join(root, targetsubdir)]
 
+def subdirs(root):
+    if isinstance(root, dict):
+        subdirs = None
+        for name in root:
+            mydirs = os.listdir(root[name])
+            if subdirs is None: # Not initialized yet
+                subdirs = mydirs
+            else:
+                subdirs = subdirs & mydirs
+        return subdirs
+
+    return os.listdir(root)
+                
 def iterate_both(root):
-    for subdir in os.listdir(root):
+    for subdir in subdirs(root):
         if 'batch' not in subdir and 'median' != subdir:
             continue
 
@@ -44,7 +58,7 @@ def iterate_both(root):
             yield result
 
 def iterate_montecarlo(root, batches=None):
-    for subdir in os.listdir(root):
+    for subdir in subdirs(root):
         if 'batch' not in subdir:
             continue
         if batches is not None and subdir not in batches:
@@ -54,6 +68,18 @@ def iterate_montecarlo(root, batches=None):
             yield result
 
 def recurse_directories(root, levels):
+    if isinstance(root, dict):
+        subdirs = None
+        for name in root:
+            mydirs = set(os.path.join(*elements[:-1]) for elements in recurse_directories(root[name], levels))
+            if subdirs is None: # Not initialized yet
+                subdirs = mydirs
+            else:
+                subdirs = subdirs & mydirs
+        for elements in subdirs:
+            yield elements.split('/') + [{name: os.path.join(root[name], elements) for name in root}]
+        return
+    
     for subdir in os.listdir(root):
         if not os.path.isdir(os.path.join(root, subdir)):
             continue
@@ -66,7 +92,11 @@ def recurse_directories(root, levels):
                 yield [subdir] + recurse
 
 def iterate_batch(root, batch):
-    for alldirs in recurse_directories(os.path.join(root, batch), 4):
+    if isinstance(root, dict):
+        subdir = {name: os.path.join(root[name], batch) for name in root}
+    else:
+        subdir = os.path.join(root, batch)
+    for alldirs in recurse_directories(subdir, 4):
         yield [batch] + alldirs
         
 def collect_in_dictionaries(data, datum, *keys):
@@ -77,7 +107,15 @@ def collect_in_dictionaries(data, datum, *keys):
 
     data[keys[-1]] = datum
 
-def directory_contains(targetdir, oneof):
+def directory_contains(targetdir, oneof, bypattern=False):
+    if isinstance(targetdir, dict):
+        for name in targetdir:
+            if bypattern and isinstance(oneof, str) and not re.match(name, oneof):
+                continue
+            if not directory_contains(targetdir[name], oneof):
+                return False
+        return True
+    
     if isinstance(oneof, str):
         oneof = [oneof]
 
@@ -100,21 +138,27 @@ def sum_into_data(root, basenames, columns, config, transforms, vectransforms):
 
     for batch, rcp, gcm, iam, ssp, targetdir in configs.iterate_valid_targets(root, config, basenames):
         message_on_none = "No valid results sets found within directories."
-        print targetdir
+        if isinstance(targetdir, str):
+            print targetdir
 
         # Ensure that all basenames are accounted for
         foundall = True
         for basename in basenames:
-            if basename + '.nc4' not in os.listdir(targetdir):
+            if not directory_contains(targetdir, basename + '.nc4', bypattern=True):
                 foundall = False
                 break
         if not foundall:
             continue
-    
+
         # Extract the values
         for ii in range(len(basenames)):
+            if isinstance(targetdir, dict):
+                fullpath = os.path.join(configs.multipath(targetdir, basenames[ii]),  basenames[ii] + '.nc4')
+            else:
+                fullpath = os.path.join(targetdir, basenames[ii] + '.nc4')
+            
             try:
-                for region, years, values in bundles.iterate_regions(os.path.join(targetdir, basenames[ii] + '.nc4'), columns[ii], config):
+                for region, years, values in bundles.iterate_regions(fullpath, columns[ii], config):
                     if 'region' in config.get('file-organize', []) and 'year' not in config.get('file-organize', []) and output_format == 'valuescsv':
                         values = vectransforms[ii](values)
                         filestuff, rowstuff = configs.csv_organize(rcp, ssp, region, 'all', config)
@@ -137,8 +181,10 @@ def sum_into_data(root, basenames, columns, config, transforms, vectransforms):
                             data[filestuff][rowstuff][(batch, gcm, iam)] += value
                         observations += 1
             except:
-                print "Failed to read " + os.path.join(targetdir, basenames[ii] + '.nc4')
+                print "Failed to read " + fullpath
                 traceback.print_exc()
+                if debug:
+                    exit()
 
     print "Observations:", observations
     if observations == 0:
@@ -146,11 +192,16 @@ def sum_into_data(root, basenames, columns, config, transforms, vectransforms):
 
     return data
 
-def deltamethod_variance(value):
+def deltamethod_variance(value, config):
+    if config.get('multiimpact_vcv', None) is None:
+        deltamethod_vcv = bundles.deltamethod_vcv
+    else:
+        deltamethod_vcv = config['multiimpact_vcv']
+        
     if value.ndim == 1:
-        return bundles.deltamethod_vcv.dot(value).dot(value)
+        return deltamethod_vcv.dot(value).dot(value)
     else:
         combined = np.zeros((value.shape[1]))
         for ii in range(value.shape[1]):
-            combined[ii] = bundles.deltamethod_vcv.dot(value[:, ii]).dot(value[:, ii])
+            combined[ii] = deltamethod_vcv.dot(value[:, ii]).dot(value[:, ii])
         return combined

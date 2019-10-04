@@ -1,7 +1,8 @@
 ## Helper functions for reading the configuration
 
-import sys, os
-import yaml
+import sys, os, re
+import yaml, csv
+import numpy as np
 import results
 
 def consume_config():
@@ -101,21 +102,37 @@ def iterate_valid_targets(root, config, impacts=None, verbose=True):
 
         if impacts is None:
             if is_parallel_deltamethod(config):
-                if os.path.isdir(get_deltamethod_path(targetdir, config)):
+                dmpath = get_deltamethod_path(targetdir, config)
+                if isinstance(dmpath, dict):
+                    allthere = True
+                    for name in dmpath:
+                        if not os.path.isdir(dmpath[name]):
+                            print "deltamethod", dmpath[name], "missing 1"
+                            allthere = False
+                            break
+                    if allthere:
+                        observations += 1
+                        yield batch, rcp, model, iam, ssp, targetdir
+                elif os.path.isdir(dmpath):
                     observations += 1
                     yield batch, rcp, model, iam, ssp, targetdir
                 elif verbose:
-                    print "deltamethod", get_deltamethod_path(targetdir, config), "missing"
+                    print "deltamethod", get_deltamethod_path(targetdir, config), "missing 2"
             else:
                 observations += 1
                 yield batch, rcp, model, iam, ssp, targetdir
         else:
             # Check that at least one of the impacts is here
             for impact in impacts:
-                if impact + ".nc4" in os.listdir(targetdir):
+                if impact + ".nc4" in os.listdir(multipath(targetdir, impact)):
                     if is_parallel_deltamethod(config):
-                        if not os.path.isfile(get_deltamethod_path(os.path.join(targetdir, impact + ".nc4"), config)):
-                            print "deltamethod", get_deltamethod_path(os.path.join(targetdir, impact + ".nc4"), config), "missing"
+                        if isinstance(targetdir, dict):
+                            dmpath = os.path.join(multipath(get_deltamethod_path(targetdir, config), impact), impact + ".nc4")
+                            if not os.path.isfile(dmpath):
+                                print "deltamethod", dmpath, "missing 3"
+                                continue
+                        elif not os.path.isfile(os.path.join(targetdir, impact + ".nc4")):
+                            print "deltamethod", dmpath, "missing 4"
                             continue
                     observations += 1
                     yield batch, rcp, model, iam, ssp, targetdir
@@ -125,9 +142,17 @@ def iterate_valid_targets(root, config, impacts=None, verbose=True):
         print message_on_none
 
 def is_parallel_deltamethod(config):
-    return isinstance(config.get('deltamethod', False), str)
+    dmconf = config.get('deltamethod', False)
+    return isinstance(dmconf, str) or isinstance(dmconf, dict)
         
 def get_deltamethod_path(path, config):
+    if isinstance(path, dict):
+        assert isinstance(path, dict)
+        assert isinstance(config['results-root'], dict)
+        assert isinstance(config['deltamethod'], dict)
+        
+        return {name: path[name].replace(config['results-root'][name], config['deltamethod'][name]) for name in path}
+
     return path.replace(config['results-root'], config['deltamethod'])
 
 def interpret_filenames(argv, config):
@@ -250,3 +275,13 @@ def csv_sorted(rowstuffs, config):
         return sorted(rowstuffs, key=key)
     else:
         return sorted(rowstuffs, cmp=cmp, key=key)
+
+def multipath(paths, basename):
+    if isinstance(paths, dict):
+        for pattern in paths:
+            if re.match(pattern, basename):
+                return paths[pattern]
+
+        raise ValueError("Cannot find path pattern to match " + basename)
+
+    return paths
