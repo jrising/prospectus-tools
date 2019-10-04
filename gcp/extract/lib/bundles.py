@@ -71,7 +71,7 @@ def iterate_regions(filepath, column, config={}):
     else:
         years, regions, data1 = read(filepath, 'costs_lb', do_deltamethod)
         years, regions, data2 = read(filepath, 'costs_ub', do_deltamethod)
-        data = ((data1 + data2) / 2) / 1e5
+        data = data2 / 1e5
 
     if deltamethod_vcv is not None and not config.get('deltamethod', False):
         ## Inferred that these were deltamethod files
