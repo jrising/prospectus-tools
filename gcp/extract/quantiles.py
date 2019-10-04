@@ -45,7 +45,7 @@ for filestuff in data:
     if configs.is_parallel_deltamethod(config):
         try:
             output_check = parallel_deltamethod_data[filestuff].keys()
-        except:
+        except KeyError:
             print str(filestuff) + " is not in delta method output. Skipping model specification..."
             continue
     with open(configs.csv_makepath(filestuff, config), 'w') as fp:
