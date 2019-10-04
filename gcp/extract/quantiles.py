@@ -42,6 +42,12 @@ if configs.is_parallel_deltamethod(config):
 
 for filestuff in data:
     print "Creating file: " + str(filestuff)
+    if configs.is_parallel_deltamethod(config):
+        try:
+            output_check = parallel_deltamethod_data[filestuff].keys()
+        except:
+            print str(filestuff) + " is not in delta method output. Skipping model specification..."
+            continue
     with open(configs.csv_makepath(filestuff, config), 'w') as fp:
         writer = csv.writer(fp, quoting=csv.QUOTE_MINIMAL)
         rownames = configs.csv_rownames(config)
