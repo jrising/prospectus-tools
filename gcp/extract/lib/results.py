@@ -91,7 +91,7 @@ def directory_contains(targetdir, oneof):
 
 def sum_into_data(root, basenames, columns, config, transforms, vectransforms):
     data = {} # { filestuff => { rowstuff => { batch-gcm-iam => value } } }
-
+    years = []
     observations = 0
     if config.get('verbose', False):
         message_on_none = "No valid target directories found"
@@ -124,7 +124,6 @@ def sum_into_data(root, basenames, columns, config, transforms, vectransforms):
                             data[filestuff][rowstuff][(batch, gcm, iam)] += values
                         observations += 1
                         continue
-                    years_for_return = years                
                     for year, value in bundles.iterate_values(years, values, config):
                         if region == 'all':
                             value = vectransforms[ii](value)
@@ -139,15 +138,9 @@ def sum_into_data(root, basenames, columns, config, transforms, vectransforms):
             except:
                 print "Failed to read " + os.path.join(targetdir, basenames[ii] + '.nc4')
                 traceback.print_exc()
-            last_targetdir = targetdir
     print "Observations:", observations
     if observations == 0:
         print message_on_none
-    
-    do_deltamethod = False if configs.is_parallel_deltamethod(config) else config.get('deltamethod', None)
-    filepath = os.path.join(last_targetdir, basenames[0] + '.nc4')
-    years, regions, data_not = bundles.read(filepath = filepath, column = columns[0], deltamethod = do_deltamethod)
-
     return data, years
 
 def deltamethod_variance(value):
