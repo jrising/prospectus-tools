@@ -38,7 +38,7 @@ if configs.is_parallel_deltamethod(config):
     # corresponds to each value in data, if doing parallel deltamethod
     config2 = copy.copy(config)
     config2['deltamethod'] = True
-    parallel_deltamethod_data = results.sum_into_data(config['deltamethod'], basenames, columns, config2, transforms, vectransforms)
+    parallel_deltamethod_data, parallel_deltamethod_years = results.sum_into_data(config['deltamethod'], basenames, columns, config2, transforms, vectransforms)
 
 for filestuff in data:
     print "Creating file: " + str(filestuff)
