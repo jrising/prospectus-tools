@@ -91,7 +91,7 @@ def directory_contains(targetdir, oneof):
 
 def sum_into_data(root, basenames, columns, config, transforms, vectransforms):
     data = {} # { filestuff => { rowstuff => { batch-gcm-iam => value } } }
-    years = []
+    years = [] # constructing years return variable here so if code doesnt execute function doesn't error
     observations = 0
     if config.get('verbose', False):
         message_on_none = "No valid target directories found"
