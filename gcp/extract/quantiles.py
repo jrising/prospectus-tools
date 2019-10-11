@@ -6,12 +6,12 @@ Supported configuration options:
 - yearsets (default: `no`)
 - years (default: `null`)
 - regions (default: `null`)
-- result-root
+- results-root
 - output-dir
 - do-montecarlo
 - only-rcp
 - only-models (default: `all`)
-- deltamethod (default: `no`) -- otherwise, result-root for deltamethod
+- deltamethod (default: `no`) -- otherwise, results root for deltamethod
 - file-organize (default: rcp, ssp)
 - do-gcmweights (default: true)
 - evalqvals (default: ['mean', .17, .5, .83])
@@ -42,6 +42,11 @@ if configs.is_parallel_deltamethod(config):
 
 for filestuff in data:
     print "Creating file: " + str(filestuff)
+    
+    if configs.is_parallel_deltamethod(config) and filestuff not in parallel_deltamethod_data:
+        print str(filestuff) + " is not in delta method output. Skipping model specification..."
+        continue
+    
     with open(configs.csv_makepath(filestuff, config), 'w') as fp:
         writer = csv.writer(fp, quoting=csv.QUOTE_MINIMAL)
         rownames = configs.csv_rownames(config)
@@ -66,7 +71,7 @@ for filestuff in data:
             for batch, gcm, iam in data[filestuff][rowstuff]:
                 value = data[filestuff][rowstuff][(batch, gcm, iam)]
                 if config.get('deltamethod', False) == True:
-                    value = results.deltamethod_variance(value)
+                    value = results.deltamethod_variance(value, config)
                     
                 if do_gcmweights:
                     try:
@@ -82,7 +87,7 @@ for filestuff in data:
                 allmontevales.append([batch, gcm, iam])
 
                 if configs.is_parallel_deltamethod(config):
-                    allvariances.append(results.deltamethod_variance(parallel_deltamethod_data[filestuff][rowstuff][(batch, gcm, iam)]))
+                    allvariances.append(results.deltamethod_variance(parallel_deltamethod_data[filestuff][rowstuff][(batch, gcm, iam)], config))
                 
             #print filestuff, rowstuff, allvalues
             if len(allvalues) == 0:
