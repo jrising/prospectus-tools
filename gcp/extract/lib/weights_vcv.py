@@ -44,11 +44,20 @@ class WeightedGMCDF(object):
         # find root for each probability
         roots = []
         for p in pp:
+            if p == 2:
+                roots.append(np.average(self.means, weights=self.weights))
+                continue
+            
             # Set up mixed distribution CDF with root and find it
             func = lambda x: sum(self.weights * norm.cdf(x, self.means, self.sds)) - p
             roots.append(brentq(func, left, right))
 
         return roots
+
+    @staticmethod
+    def encode_evalqvals(evalqvals):
+        encoder = {'mean': 2}
+        return map(lambda p: p if isinstance(p, float) else encoder[p], evalqvals)
 
 if __name__ == '__main__':
     ## Example between R and python
