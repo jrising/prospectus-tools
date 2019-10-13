@@ -39,15 +39,16 @@ class WeightedGMCDF(object):
             pp = np.array([pp])
 
         # determine extreme left and right bounds for root-finding
+        pp = np.array(pp) # needs to be np array
         left = np.min(norm.ppf(np.min(pp), self.means, self.sds))
-        right = np.max(norm.ppf(np.max(pp), self.means, self.sds))
+        right = np.max(norm.ppf(np.max(pp[pp < 1]), self.means, self.sds))
         # find root for each probability
         roots = []
         for p in pp:
             if p == 2:
                 roots.append(np.average(self.means, weights=self.weights))
                 continue
-            
+
             # Set up mixed distribution CDF with root and find it
             func = lambda x: sum(self.weights * norm.cdf(x, self.means, self.sds)) - p
             roots.append(brentq(func, left, right))

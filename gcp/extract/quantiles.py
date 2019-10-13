@@ -54,7 +54,7 @@ for filestuff in data:
         if output_format == 'edfcsv':
             writer.writerow(rownames + map(lambda q: q if isinstance(q, str) else 'q' + str(int(q * 100)), evalqvals))
             if configs.is_parallel_deltamethod(config):
-                encoded_evalqvals = weights.WeightedGMCDF.encode_evalqvals(evalqvals)
+                encoded_evalqvals = weights_vcv.WeightedGMCDF.encode_evalqvals(evalqvals)
             else:
                 encoded_evalqvals = weights.WeightedECDF.encode_evalqvals(evalqvals)
         elif output_format == 'valuescsv':
