@@ -140,6 +140,8 @@ def sum_into_data(root, basenames, columns, config, transforms, vectransforms):
         message_on_none = "No valid results sets found within directories."
         if isinstance(targetdir, str):
             print targetdir
+        else:
+            print targetdir[targetdir.keys()[0]], "..."
 
         # Ensure that all basenames are accounted for
         foundall = True
@@ -195,7 +197,7 @@ def deltamethod_variance(value, config):
         deltamethod_vcv = bundles.deltamethod_vcv
     else:
         deltamethod_vcv = config['multiimpact_vcv']
-        
+
     if value.ndim == 1:
         return deltamethod_vcv.dot(value).dot(value)
     else:
