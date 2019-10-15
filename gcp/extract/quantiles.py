@@ -33,12 +33,12 @@ output_format = config.get('output-format', 'edfcsv')
 columns, basenames, transforms, vectransforms = configs.interpret_filenames(argv, config)
 
 # Collect all available results
-data = results.sum_into_data(config['results-root'], basenames, columns, config, transforms, vectransforms)
+data, years = results.sum_into_data(config['results-root'], basenames, columns, config, transforms, vectransforms)
 if configs.is_parallel_deltamethod(config):
     # corresponds to each value in data, if doing parallel deltamethod
     config2 = copy.copy(config)
     config2['deltamethod'] = True
-    parallel_deltamethod_data = results.sum_into_data(config['deltamethod'], basenames, columns, config2, transforms, vectransforms)
+    parallel_deltamethod_data, parallel_deltamethod_years = results.sum_into_data(config['deltamethod'], basenames, columns, config2, transforms, vectransforms)
 
 for filestuff in data:
     print "Creating file: " + str(filestuff)
@@ -74,7 +74,7 @@ for filestuff in data:
             for batch, gcm, iam in data[filestuff][rowstuff]:
                 value = data[filestuff][rowstuff][(batch, gcm, iam)]
                 if config.get('deltamethod', False) == True:
-                    value = deltamethod_variance(value, config)
+                    value = results.deltamethod_variance(value, config)
                     
                 if do_gcmweights:
                     try:
