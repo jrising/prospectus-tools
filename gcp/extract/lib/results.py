@@ -129,7 +129,7 @@ def directory_contains(targetdir, oneof, bypattern=False):
 
 def sum_into_data(root, basenames, columns, config, transforms, vectransforms):
     data = {} # { filestuff => { rowstuff => { batch-gcm-iam => value } } }
-
+    years = [] # constructing years return variable here so if code doesnt execute function doesn't error
     observations = 0
     if config.get('verbose', False):
         message_on_none = "No valid target directories found"
@@ -159,7 +159,7 @@ def sum_into_data(root, basenames, columns, config, transforms, vectransforms):
             
             try:
                 for region, years, values in bundles.iterate_regions(fullpath, columns[ii], config):
-                    if 'region' in config.get('file-organize', []) and 'year' not in config.get('file-organize', []) and output_format == 'valuescsv':
+                    if 'region' in config.get('file-organize', []) and 'year' not in config.get('file-organize', []) and config.get('output-format', 'edfcsv') == 'valuescsv':
                         values = vectransforms[ii](values)
                         filestuff, rowstuff = configs.csv_organize(rcp, ssp, region, 'all', config)
                         if ii == 0:
@@ -168,7 +168,6 @@ def sum_into_data(root, basenames, columns, config, transforms, vectransforms):
                             data[filestuff][rowstuff][(batch, gcm, iam)] += values
                         observations += 1
                         continue
-                
                     for year, value in bundles.iterate_values(years, values, config):
                         if region == 'all':
                             value = vectransforms[ii](value)
@@ -189,8 +188,7 @@ def sum_into_data(root, basenames, columns, config, transforms, vectransforms):
     print "Observations:", observations
     if observations == 0:
         print message_on_none
-
-    return data
+    return data, years
 
 def deltamethod_variance(value, config):
     if config.get('multiimpact_vcv', None) is None:
