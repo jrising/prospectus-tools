@@ -51,9 +51,6 @@ def read_region(target_regions, *args, **kwargs):
     if 'global' in target_regions:
         target_regions[target_regions.index('global')] = ""
     
-    #if target_regions == ['global']:
-    #    target_regions = ['']
-    
     # Because someone's always tryin to ice-skate up hill
     if isinstance(target_regions, str):
         target_regions = [target_regions]
