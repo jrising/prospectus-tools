@@ -187,16 +187,7 @@ def interpret_filenames(argv, config):
 def is_allregions(config):
     return not ('region' in config or 'regions' in config) and not 'region' in config.get('file-organize', [])
 
-def get_regions(config, allregions=None):
-    if allregions is None:
-        allregions = []
-
-    if 'region' not in config.keys() and 'regions' not in config.keys():
-        return []
-
-    if 'region' in config:
-        return [config['region']]
-
+def get_regions(config, allregions):
     regions = config.get('regions', allregions)
     if 'countries' in regions:
         regions = filter(lambda x: x != 'countries', regions) + filter(lambda x: len(x) == 3, allregions)
