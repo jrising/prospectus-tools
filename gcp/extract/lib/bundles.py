@@ -138,8 +138,6 @@ def iterate_regions(filepath, column, config={}):
 
     regions = list(regions)
     for region in configs.get_regions(config, regions):
-        if region == 'global':
-            region = ''
         ii = regions.index(region)
         if config.get('deltamethod', False) and not configs.is_parallel_deltamethod(config):
             yield regions[ii], years, data[:, :, ii]

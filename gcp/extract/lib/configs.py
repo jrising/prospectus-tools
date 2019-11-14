@@ -187,14 +187,31 @@ def interpret_filenames(argv, config):
 def is_allregions(config):
     return not ('region' in config or 'regions' in config) and not 'region' in config.get('file-organize', [])
 
+
 def get_regions(config, allregions):
+    """Grab and parse regions to extract from file
+
+    Parameters
+    ----------
+    config : dict
+    allregions : Sequence of str
+        Regions available for extraction in the target NetCDF file.
+
+    Returns
+    -------
+    Iterable
+    """
     regions = config.get('regions', allregions)
+
+    if 'global' in regions:
+        regions = ['' if x == 'global' else x for x in regions]
     if 'countries' in regions:
         regions = filter(lambda x: x != 'countries', regions) + filter(lambda x: len(x) == 3, allregions)
     if 'funds' in regions:
         regions = filter(lambda x: x != 'funds', regions) + filter(lambda x: x[:5] == 'FUND-', allregions)
 
     return regions
+
 
 def get_years(config, years):
     if 'year' in config:
