@@ -49,11 +49,12 @@ def read_region(config, *args, **kwargs):
     data : array-like
     """
     years, regions, data = read(*args, **kwargs)
-    regions_msk = np.ones(regions.shape, dtype='bool')
 
-    if not configs.is_allregions(config):
+    if configs.is_allregions(config):
+        regions_msk = np.ones(regions.shape, dtype='bool')
+    else:
         target_regions = configs.get_regions(config, regions)
-        regions_msk[:] = np.isin(regions, target_regions)
+        regions_msk = np.isin(regions, target_regions)
 
     return years, regions[regions_msk], data[..., regions_msk]
 
