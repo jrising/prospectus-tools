@@ -64,11 +64,15 @@ Perform operations for only one RCP or realization?  Set to `null` for all RCPs.
 
 ## `only-iam` (options: null, low, high)
 
-Perform operations for only one IAM (high or low)?  Set to `null` for all RCPs.
+Perform operations for only one IAM (high or low)?  Set to `null` for all IAMs.
 
 ## `only-models` (options: all (default), or list
 
 Only include certain climate models in the results.  e.g., `[hadgem2-ao, hadgem2-es]`.
+
+## `only-ssp` (options: null, SSP1, SSP2, SSP3, SSP4, or SSP5)
+ 
+Perform operations for only one SSP scenario?  Set to `null` for all SSPs.
 
 ## `checks` (options: null or list of files)
 
