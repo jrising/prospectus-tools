@@ -10,6 +10,8 @@ Supported configuration options:
 - output-dir
 - do-montecarlo
 - only-rcp
+- only-iam
+- only-ssp
 - only-models (default: `all`)
 - deltamethod (default: `no`) -- otherwise, results root for deltamethod
 - file-organize (default: rcp, ssp)

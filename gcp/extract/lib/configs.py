@@ -55,6 +55,7 @@ def iterate_valid_targets(root, config, impacts=None, verbose=True):
     do_montecarlo = config.get('do-montecarlo', False)
     do_rcp_only = config.get('only-rcp', None)
     do_iam_only = config.get('only-iam', None)
+    do_ssp_only = config.get('only-ssp', None)
     do_targetsubdirs = config.get('targetsubdirs', None)
     do_batchdir = config.get('batchdir', 'median')
     checks = config.get('checks', None)
@@ -95,6 +96,9 @@ def iterate_valid_targets(root, config, impacts=None, verbose=True):
             continue
         if do_iam_only and iam != do_iam_only:
             print targetdir, "not", do_iam_only
+            continue
+        if do_ssp_only and ssp != do_ssp_only:
+            print targetdir, "not", do_ssp_only
             continue
         if allmodels is not None and model not in allmodels:
             print targetdir, "not in", allmodels
