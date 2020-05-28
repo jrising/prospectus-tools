@@ -228,6 +228,8 @@ def get_years(config, years):
 ## CSV Creation
 
 def csv_organize(rcp, ssp, region, year, config):
+    if config.get('ignore-ssp', False):
+        ssp = 'NA'
     values = dict(rcp=rcp, ssp=ssp, region=region, year=year)
     file_organize = config.get('file-organize', ['rcp', 'ssp'])
     allkeys = ['rcp', 'ssp', 'region', 'year']

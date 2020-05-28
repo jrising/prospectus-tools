@@ -69,8 +69,12 @@ def iterate_valid_targets(config, impacts, verbose=True):
             print targetdir, "not in", allmodels
             continue
 
+        if impacts is None:
+            yield (batch, rcp, model, realization, pvals, targetdir)
+            continue
+
         # Check that at least one of the impacts is here
         for impact in impacts:
             if impact + suffix + ".tar.gz" in os.listdir(targetdir):
                 yield (batch, rcp, model, realization, pvals, targetdir)
-                continue
+                break
