@@ -205,6 +205,9 @@ def get_regions(config, allregions):
     -------
     Iterable
     """
+    if 'region' in config:
+        return [config['region']]
+    
     regions = config.get('regions', allregions)
 
     if 'global' in regions:
