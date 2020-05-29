@@ -52,6 +52,10 @@ Only extract results for the given years, if provided.
 
 # Region handling
 
+## `region` (options: null or string)
+
+Only extract results for a single region, if provided
+
 ## `regions` (options: null or list of regions)
 
 Only extract results for the given regions, if provided

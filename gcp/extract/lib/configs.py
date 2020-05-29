@@ -195,6 +195,11 @@ def is_allregions(config):
 def get_regions(config, allregions):
     """Grab and parse regions to extract from file
 
+    This handles the specification of the desired regions. Both a
+    `region` (a single region as a string) and `regions` (a list of
+    region names) config argument are supported, as well as some key
+    names within the regions list: 'global', 'countries', and 'funds'.
+
     Parameters
     ----------
     config : dict
@@ -204,7 +209,11 @@ def get_regions(config, allregions):
     Returns
     -------
     Iterable
+
     """
+    if 'region' in config:
+        return [config['region']]
+    
     regions = config.get('regions', allregions)
 
     if 'global' in regions:
