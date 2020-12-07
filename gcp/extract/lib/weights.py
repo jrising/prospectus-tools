@@ -30,23 +30,27 @@ def get_weights(rcp):
 
 def get_weights_april2016(rcp):
     weights = {}
-
-    with open('/shares/gcp/climate/BCSD/SMME/SMME-weights/' + rcp + '_2090_SMME_edited_for_April_2016.tsv', 'rU') as tsvfp:
-        reader = csv.reader(tsvfp, delimiter='\t')
-        header = reader.next()
-        for row in reader:
-            model = row[1].split('_')[0].strip('*').lower()
-            weight = float(row[2])
-            weights[model] = weight
-
     if rcp == 'rcp45':
+        with open('/shares/gcp/climate/BCSD/SMME/SMME-weights/rcp45_2090_SMME_edited_for_April_2016.tsv', 'rU') as tsvfp:
+            reader = csv.reader(tsvfp, delimiter='\t')
+            header = reader.next()
+            for row in reader:
+                model = row[1].split('_')[0].strip('*').lower()
+                weight = float(row[2])
+                weights[model] = weight
         weights["pattern4"] = 0 # Explicitly remove (so no messages)
-
+    if rcp == 'rcp85':
+        with open('/shares/gcp/climate/BCSD/SMME/SMME-weights/rcp85_2090_SMME_Arg_April2019.tsv', 'rU') as tsvfp:
+            reader = csv.reader(tsvfp, delimiter='\t')
+            header = reader.next()
+            for row in reader:
+                model = row[1].split('_')[0].strip('*').lower()
+                weight = float(row[2])
+                weights[model] = weight
     return weights
-
+    
 def get_weights_march2018(rcp):
     weights = {}
-
     with open('/shares/gcp/climate/BCSD/SMME/SMME-weights/' + rcp + '_SMME_weights.tsv', 'rU') as tsvfp:
         reader = csv.reader(tsvfp, delimiter='\t')
         header = reader.next()
@@ -56,10 +60,15 @@ def get_weights_march2018(rcp):
                 model = 'surrogate_' + model
             weight = float(row[2])
             weights[model] = weight
-
     if rcp == 'rcp45':
         weights["surrogate_gfdl-esm2g_06"] = 0 # Explicitly remove (so no messages)
-            
+    if rcp == 'rcp85':
+        weights["access1-0"] = 0
+        weights["ipsl-cm5a-lr"] = 0.036
+        weights["ipsl-cm5a-mr"] = 0.036
+        weights["csiro-mk3-6-0"] = 0.036
+        weights["canesm2"] = 0.036
+        weights["bnu-esm"] = 0.036
     return weights
 
 def weighted_values(values, weights):
@@ -134,3 +143,4 @@ if __name__ == '__main__':
                 print gcm, weights[gcm.lower()]
             except:
                 print "Cannot find weight for %s under %s" % (gcm, rcp)
+
