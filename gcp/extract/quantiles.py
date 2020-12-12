@@ -13,6 +13,7 @@ Supported configuration options:
 - only-iam
 - only-ssp
 - only-models (default: `all`)
+- drop-models (default: `none`)
 - deltamethod (default: `no`) -- otherwise, results root for deltamethod
 - file-organize (default: rcp, ssp)
 - do-gcmweights (default: true)
