@@ -32,9 +32,12 @@ def iterate_valid_targets(config, impacts, verbose=True):
     root = config['results-root']
     do_montecarlo = config['do-montecarlo']
     do_adaptation = config['do-adaptation'] == True
-    batches = range(config['batches']) if isinstance(config['batches'], int) else config['batches']
+    if 'batches' in config:
+        batches = range(config['batches']) if isinstance(config['batches'], int) else config['batches']
+    else:
+        batches = "NA"
     allmodels = config['only-models'] if config.get('only-models', 'all') != 'all' else None
-    checks = config['checks']
+    checks = config.get('checks', None)
     do_rcp_only = config['only-rcp']
     do_realization_only = config['only-realization']
     batch_presuffix = config.get('batch-presuffix', False)
