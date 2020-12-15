@@ -20,7 +20,10 @@ allimpacts = config['only-impacts'] if config.get('only-impacts', 'all') != 'all
 suffix = configs.get_suffix(config)
 column = config['column']
 allow_partial = config['allow-partial']
-batches = range(config['batches']) if isinstance(config['batches'], int) else config['batches']
+if 'batches' in config:
+    batches = range(config['batches']) if isinstance(config['batches'], int) else config['batches']
+else:
+    batches = "NA"
 
 evalpvals = list(np.linspace(.01, .99, 99))
 
@@ -32,7 +35,7 @@ if do_yearsets:
     else:
         yearses = [(2020, 2039), (2040, 2059), (2080, 2099)]
 else:
-    years = range(2000, 2100)
+    years = range(1981, 2100)
 
 if do_yearsetmeans:
     combine_years = np.mean
@@ -75,11 +78,11 @@ for impact in allimpacts:
     if batches == 'truehist':
         rcps = ['truehist']
     else:
-        rcps = results.rcps
+        rcps = map(lambda s: s.upper(), results.rcps)
 
     # Combine across all batch-realizations that have all models
     for rcp in rcps:
-        model_weights = weights.get_weights(rcp)
+        model_weights = weights.get_weights(rcp.lower())
 
         if do_yearsets:
             dists = [rcp + '-' + str(years[0]) for years in yearses]
@@ -131,7 +134,6 @@ for impact in allimpacts:
                                 allmodels += data[dist][region][collection].keys()
                                 allcollections += [collection] * len(data[dist][region][collection])
 
-                    print dist, region, len(allvalues)
                     if len(allvalues) == 0:
                         continue
 
