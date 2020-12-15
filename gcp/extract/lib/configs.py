@@ -161,7 +161,7 @@ def included_models(config):
     ## Ensure that only one of these is used (for constructing weights file names)
 
     if only_models and drop_models:
-        only_models = [model in only_models if model not in drop_models]
+        only_models = [model for model in only_models if model not in drop_models]
         drop_models = []
 
     return only_models, drop_models

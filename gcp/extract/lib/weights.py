@@ -65,17 +65,20 @@ def get_weights_march2018(rcp, config):
             
     return weights
 
-def march2018_filepath(rcp, config):
+def march2018_filepath(rcp, config, always=False):
     weights_dir = '/shares/gcp/climate/BCSD/SMME/SMME-weights'
     
     only_models, drop_models = configs.included_models(config)
 
     if only_models or drop_models:
         if only_models:
+            only_models.sort()
             preferred_filename = rcp + '_SMME_weights_of_' + '_'.join(only_models) + '.tsv'
         else:
+            drop_models.sort()
             preferred_filename = rcp + '_SMME_weights_no_' + '_'.join(drop_models) + '.tsv'
-        if os.path.join(weights_dir, preferred_filename):
+
+        if always or os.path.join(weights_dir, preferred_filename):
             return os.path.join(weights_dir, preferred_filename)
         else:
             print "WARNING: " + preferred_filename + " does not exist."
@@ -147,7 +150,7 @@ if __name__ == '__main__':
     for rcp in os.listdir(batchdir):
         if rcp == 'historical':
             continue
-        weights = get_weights(rcp)
+        weights = get_weights(rcp, {})
         print weights
         for gcm in os.listdir(os.path.join(batchdir, rcp)):
             try:
