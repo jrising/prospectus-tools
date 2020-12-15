@@ -212,9 +212,9 @@ def get_regions(config, allregions):
 
     """
     if 'region' in config:
-        return [config['region']]
-    
-    regions = config.get('regions', allregions)
+        regions = [config['region']]
+    else:
+        regions = config.get('regions', allregions)
 
     if 'global' in regions:
         regions = ['' if x == 'global' else x for x in regions]
