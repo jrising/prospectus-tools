@@ -61,7 +61,7 @@ def iterate_valid_targets(root, config, impacts=None, verbose=True):
     checks = config.get('checks', None)
     dirtree = config.get('dirtree', 'normal')
 
-    allmodels = config['only-models'] if config.get('only-models', 'all') != 'all' else None
+    only_models, drop_models = included_models(config)
 
     if dirtree == 'climate-only':
         def get_iterator():
@@ -100,8 +100,11 @@ def iterate_valid_targets(root, config, impacts=None, verbose=True):
         if do_ssp_only and ssp != do_ssp_only:
             print targetdir, "not", do_ssp_only
             continue
-        if allmodels is not None and model not in allmodels:
-            print targetdir, "not in", allmodels
+        if only_models is not None and model not in only_models:
+            print targetdir, "not in", only_models
+            continue
+        if model in drop_models:
+            print targetdir, "in", drop_models
             continue
 
         if impacts is None:
@@ -144,6 +147,24 @@ def iterate_valid_targets(root, config, impacts=None, verbose=True):
 
     if observations == 0:
         print message_on_none
+
+def included_models(config):
+    """Handle the `only-models` and `drop-models` config options, checking validity."""
+    
+    only_models = config['only-models'] if config.get('only-models', 'all') != 'all' else None
+    if isinstance(only_models, str):
+        only_models = [only_models]
+    drop_models = config.get('drop-models', 'none') if config.get('drop-models', 'none') != 'none' else []
+    if isinstance(drop_models, str):
+        drop_models = [drop_models]
+
+    ## Ensure that only one of these is used (for constructing weights file names)
+
+    if only_models and drop_models:
+        only_models = [model for model in only_models if model not in drop_models]
+        drop_models = []
+
+    return only_models, drop_models
 
 def is_parallel_deltamethod(config):
     dmconf = config.get('deltamethod', False)

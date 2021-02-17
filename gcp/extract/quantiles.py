@@ -13,6 +13,7 @@ Supported configuration options:
 - only-iam
 - only-ssp
 - only-models (default: `all`)
+- drop-models (default: `none`)
 - deltamethod (default: `no`) -- otherwise, results root for deltamethod
 - file-organize (default: rcp, ssp)
 - do-gcmweights (default: true)
@@ -66,7 +67,7 @@ for filestuff in data:
         for rowstuff in configs.csv_sorted(data[filestuff].keys(), config):
             print "Outputing row: " + str(rowstuff)
             if do_gcmweights:
-                model_weights = weights.get_weights(configs.csv_organized_rcp(filestuff, rowstuff, config))
+                model_weights = weights.get_weights(configs.csv_organized_rcp(filestuff, rowstuff, config), config)
 
             allvalues = []
             allvariances = [] # only used for parallel deltamethod
