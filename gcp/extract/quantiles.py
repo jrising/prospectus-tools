@@ -107,6 +107,9 @@ for filestuff in data:
                         allvariances = np.array(allvariances)
                     for ii in range(allvalues.shape[1]):
                         if configs.is_parallel_deltamethod(config):
+                            if np.any(np.isnan(allvalues[:, ii])):
+                                print "%s has missing values. Skipping." % config['regionorder'][ii]
+                                continue
                             distribution = weights_vcv.WeightedGMCDF(allvalues[:, ii], allvariances[:, ii], allweights)
                         else:
                             distribution = weights.WeightedECDF(allvalues[:, ii], allweights, ignore_missing=config.get('ignore-missing', False))

@@ -51,7 +51,13 @@ class WeightedGMCDF(object):
 
             # Set up mixed distribution CDF with root and find it
             func = lambda x: sum(self.weights * norm.cdf(x, self.means, self.sds)) - p
-            roots.append(brentq(func, left, right))
+            try:
+                roots.append(brentq(func, left, right))
+            except:
+                print "Cannot find the location of %f for the following means and std. devs:" % p
+                print self.means
+                print self.sds
+                roots.append(np.nan)
 
         return roots
 
