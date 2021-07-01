@@ -78,7 +78,7 @@ for impact in allimpacts:
     if batches == 'truehist':
         rcps = ['truehist']
     else:
-        rcps = map(lambda s: s.upper(), results.rcps)
+        rcps = results.rcps
 
     # Combine across all batch-realizations that have all models
     for rcp in rcps:
@@ -91,6 +91,7 @@ for impact in allimpacts:
 
         for dist in dists:
             if dist not in data:
+                print("No " + dist)
                 continue
 
             with open(os.path.join(outdir, impact + '-' + dist + '.csv'), 'w') as csvfp:
@@ -135,6 +136,7 @@ for impact in allimpacts:
                                 allcollections += [collection] * len(data[dist][region][collection])
 
                     if len(allvalues) == 0:
+                        print("No values!")
                         continue
 
                     if output_format == 'edfcsv':

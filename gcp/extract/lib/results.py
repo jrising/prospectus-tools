@@ -22,7 +22,7 @@ import os, csv, glob, traceback, re
 import numpy as np
 import configs, bundles
 
-debug = True
+debug = False
 rcps = ['rcp45', 'rcp85']
 
 def iterate_targetdirs(root, targetsubdirs):
